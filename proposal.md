@@ -12,12 +12,6 @@ pdf file.
 ---
 geometry: margin=1in
 papersize: letter
-mainfont: LiberationSans-Regular.ttf
-mainfontoptions:
-- BoldFont=LiberationSans-Bold.ttf
-- ItalicFont=LiberationSans-BoldItalic.ttf
-- BoldItalicFont=LiberationSans-Italic.ttf
-monofont: LiberationMono-Regular.ttf
 fontsize: 12pt
 linestretch: 2
 output: pdf_document
