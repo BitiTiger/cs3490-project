@@ -62,24 +62,24 @@ November 10, 2021
 
 # Project Description
 
-The basis of this project is simple, to convert markdown into HTML. The reason a 
-program like this is important, or why somebody may want to use it, is that 
+The basis of this project is simple, to convert markdown into HTML. The reason a 
+program like this is important, or why somebody may want to use it, is that 
 markdown is ultimately easier to write and easier to read than HTML. In this case,
-using such a tool could be benefifical to save time and energy spent by web developers.
+using such a tool could be beneficial to save time and energy spent by web developers.
 
-The user would interact with this program by invoking the program by using 
-`converter <input> <output>`. In the example `converter file.md file.html`, 
-`file.md` represents the input file and`file.html` represents the output file. 
-The program then parses the input file and writes the resulting HTML code in the 
-output file. For example, in the markdown file, we may have the code ```# Heading 1```, 
-but once the code is converted into an HTML file, the resulting conversion would 
-look like ```<h1>Heading 1</h1>```. Another example would be if we had the markdown 
+The user would interact with this program by invoking the program by using 
+`converter <input> <output>`. In the example `converter file.md file.html`, 
+`file.md` represents the input file and`file.html` represents the output file. 
+The program then parses the input file and writes the resulting HTML code in the 
+output file. For example, in the markdown file, we may have the code ```# Heading 1```, 
+but once the code is converted into an HTML file, the resulting conversion would 
+look like ```<h1>Heading 1</h1>```. Another example would be if we had the markdown 
 code ```**Bold Letters**```, the resulting HTML code would appear as ```<b>Bold Letters</b>```.
-After the program has finished executing and successfuly converted the markdown into HTML,
-the new HTML file will be downloaded to the user's computer. If the programs execution is 
+After the program has finished executing and successfully converted the markdown into HTML,
+the new HTML file will be downloaded to the user's computer. If the program's execution is 
 not successful due to any reason, an error message will be displayed instead.
 
-The internal datatypes are very simple. HTML and Markdown are both text markup
+The internal data types are very simple. HTML and Markdown are both text markup
 languages. This means they both do the same thing: represent a formatted
 document to the user. Since they are both used for the same purpose, they have
 many elements in common. The only realistic difference is how that document
@@ -89,7 +89,7 @@ block level elements. A webpage is made up of one or more block level elements.
 For this reason, our main structure called `document` will simply be a list of
 block types. Our `block` type will contain representations of HTML's typical
 block elements like ordered lists, unordered lists, paragraphs, and code blocks.
-Each block element can contain any number of inline elements such as unformatted
+Each block element can contain any number of inline elements, such as unformatted
 text, inline code, bold or italic text, links, and other items typically found
 in a paragraph. We will use a parser and lexer similar to our homework and in
 class assignments. Our lexer will detect syntax symbols and convert them into
