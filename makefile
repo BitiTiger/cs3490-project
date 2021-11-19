@@ -13,7 +13,7 @@ project:
 	# run the haskell compiler
 	ghc ./project/converter.hs -o ./project/converter
 	# make a build directory
-	mkdir build
+	mkdir -p build
 	# put binary in build directory
 	cp project/converter build/
 
