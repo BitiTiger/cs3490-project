@@ -5,11 +5,11 @@ all:
 
 # this converts the proposal markdown document into a pdf
 # it uses a tool called pandoc to do the conversions but I doubt you have it installed
-proposal: ./proposal/proposal.md
+proposal: proposal/proposal.md
 	pandoc -f markdown --pdf-engine=lualatex ./proposal/proposal.md -o ./proposal/proposal-preview.pdf
 
 # this compiles Haskell code into a binary and puts it in the build directory
-project: ./project/converter.hs
+project: project/converter.hs
 	# run the haskell compiler
 	ghc ./project/converter.hs -o ./project/converter
 	# make a build directory
