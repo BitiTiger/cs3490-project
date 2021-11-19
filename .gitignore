@@ -1,2 +1,9 @@
 # the generated pdf file
-proposal-preview.pdf
+proposal/proposal-preview.pdf
+# haskell compilation files
+project/converter.hi
+project/converter.o
+# the project binary
+project/converter
+# the build directory
+build
