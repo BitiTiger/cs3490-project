@@ -4,6 +4,7 @@
 	Import Statements
 -}
 import System.Environment
+import System.IO
 
 {-
 	Data Type Definitions
@@ -126,7 +127,9 @@ main = do
   let (infile, outfile) = getFiles args -- get file names
   putStrLn ("Input: " ++ infile) -- show input file name
   putStrLn ("Output: " ++ outfile) -- show output file name
-  --  let mdText = read infile
+  inHandle <- openFile infile ReadMode
+  mdText <- hGetContents inHandle
+  print mdText
   --  let lexed = lexer mdText
   --  let parsed = parser lexed
   --  let html = printHTML parsed
