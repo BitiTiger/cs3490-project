@@ -7,3 +7,5 @@ project/converter.o
 project/converter
 # the build directory
 build
+# vs code stuff
+.vscode
