@@ -1,9 +1,13 @@
 -- This file is the group effort of Cameron Himes and Chase Faine
 
--- imports
+{-
+	Import Statements
+-}
 import System.Environment
 
--- data types
+{-
+	Data Type Definitions
+-}
 type Text = String
 data Inline = Normal Text       -- normal text
             | Bold Text         -- bold text
@@ -22,7 +26,9 @@ data Token = Star               -- used for bold/italic
            | I Inline           -- preparsed Inline type
            | T Text             -- preparsed Text type
 
--- function definitions
+{-
+	Function Definitions
+-}
 
 -- this gets the file names from the user
 getFiles :: [String] -> (String, String)
