@@ -3,8 +3,9 @@
 {-
 	Import Statements
 -}
-import System.Environment
-import System.IO
+
+import System.Environment (getArgs)
+import System.IO (IOMode (ReadMode), hGetContents, openFile)
 
 {-
 	Data Type Definitions
@@ -16,7 +17,9 @@ data Inline
   | Bold Text -- bold text
   | Italic Text -- italic text
   | BoldItalic Text -- bold and italic text
+  | Strikethrough Text -- strikethrough text
   | Preformatted Text -- inline code
+  deriving (Show)
 
 data Block
   = LI [Block] -- List Items
@@ -26,17 +29,27 @@ data Block
   | Heading2 [Inline] -- Heading 2
   | Paragraph [Inline] -- Paragraph
   | Code [Inline] -- Code block
+  deriving (Show)
 
 type Document = [Block]
 
 data Token
-  = Star -- used for bold/italic
+  = BoldOp -- used for bold
+  | ItalicOp -- used for italic
+  | BoldItalicOp -- used for bold and italic
+  | PreformattedOp -- used for preformatted
+  | StrikethroughOp -- used for strikethrough
+  | CodeOp -- used for code
   | Dash -- used for unordered lists
-  | BackTick -- used for code/preformatted text
+  | OLOp -- used for ordered lists
+  | Tab -- used for indentation
   | NewLine -- used to shorten lines or end a block
+  | H1Op -- used for level 1 headings
+  | H2Op -- used for level 2 headings
   | B Block -- preparsed Block type
   | I Inline -- preparsed Inline type
-  | T Text -- preparsed Text type
+  | GenericText Text -- generic Text type
+  deriving (Show)
 
 {-
 	Examples
@@ -51,7 +64,9 @@ doc1 =
     Heading2 [Normal "This tests", BoldItalic "bold and italic", Normal "text."],
     Heading2 [Normal "This tests", Preformatted "preformatted", Normal "text."],
     Paragraph
-      [ Normal "This is not a normal paragraph. I can make things",
+      [ Normal "This is",
+        Strikethrough "not",
+        Normal "a normal paragraph. I can make things",
         Bold "bold",
         Normal "or",
         Italic "italic",
@@ -68,9 +83,9 @@ doc2 :: Document
 doc2 =
   [ Heading1 [Normal "The Top 3 Programming Languages"],
     OL
-      [ Paragraph [Normal "Python"],
-        Paragraph [Normal "JavaScript"],
-        Paragraph [Normal "GoLang"]
+      [ LI [Paragraph [Normal "Python"]],
+        LI [Paragraph [Normal "JavaScript"]],
+        LI [Paragraph [Normal "GoLang"]]
       ]
   ]
 
@@ -116,7 +131,81 @@ getFiles [i] = error "Error: No output file provided." -- one file
 getFiles [i, o] = (i, o) -- two files
 getFiles (i : o : xs) = error "Error: Too many files provided." -- N files
 
---lexer :: String -> [Token]
+-- helper to check for ordered lists
+isValidOrderedList :: String -> Bool
+isValidOrderedList s =
+  let q0 "" = False
+      q0 (x : xs)
+        | x `elem` ['0' .. '9'] = q0 xs
+        | x == '.' = q1 xs
+        | otherwise = False
+      q1 [] = True
+      q1 xs = False
+   in q0 s
+
+-- helper to convert four spaces to tabs
+convertSpacesToTabs :: String -> String
+convertSpacesToTabs "" = ""
+convertSpacesToTabs (' ':' ':' ':' ':xs) = "\t"++convertSpacesToTabs xs
+convertSpacesToTabs (x:xs) = x:convertSpacesToTabs xs
+
+-- helper to add spaces between symbols
+preproc :: String -> String
+preproc "" = "" -- Base Case
+preproc ('#' : '#' : xs) = ' ' : '#' : '#' : ' ' : preproc xs -- Header2 Case
+preproc ('#' : xs) = ' ' : '#' : ' ' : preproc xs -- Header1 Case
+preproc ('*' : '*' : '*' : xs) = ' ' : '*' : '*' : '*' : ' ' : preproc xs -- BoldItalic Case
+preproc ('*' : '*' : xs) = ' ' : '*' : '*' : ' ' : preproc xs -- Bold Case
+preproc ('*' : xs) = ' ' : '*' : ' ' : preproc xs -- Italic Case
+preproc ('_' : '_' : '_' : xs) = ' ' : '_' : '_' : '_' : ' ' : preproc xs -- BoldItalic Case
+preproc ('_' : '_' : xs) = ' ' : '_' : '_' : ' ' : preproc xs -- Bold Case
+preproc ('_' : xs) = ' ' : '_' : ' ' : preproc xs -- Italic Case
+preproc ('`' : '`' : '`' : xs) = ' ' : '`' : '`' : '`' : ' ' : preproc xs -- Code Case
+preproc ('`' : xs) = ' ' : '`' : ' ' : preproc xs -- Preformatted Case
+preproc ('-' : xs) = ' ' : '-' : ' ' : preproc xs -- Dash
+preproc ('~' : '~' : xs) = ' ' : '~' : '~' : ' ' : preproc xs -- Strikethrough Case
+preproc ('\n' : xs) = ' ' : '\n' : ' ' : preproc xs -- Newline
+preproc ('\t' : xs) = ' ' : '\t' : ' ' : preproc xs -- Tab
+preproc (x : xs) = x : preproc xs -- GenericText
+
+classify :: String -> Token
+classify [] = error "Token error: empty string."
+classify "#" = H1Op
+classify "##" = H2Op
+classify "***" = BoldItalicOp
+classify "**" = BoldOp
+classify "*" = ItalicOp
+classify "___" = BoldItalicOp
+classify "__" = BoldOp
+classify "_" = ItalicOp
+classify "```" = CodeOp
+classify "`" = PreformattedOp
+classify "-" = Dash
+classify "~~" = StrikethroughOp
+classify "\n" = NewLine
+classify "\t" = Tab
+classify x
+  | isValidOrderedList x = OLOp
+  | otherwise = GenericText x
+
+removeSpaceFront :: String -> String
+removeSpaceFront (' ' : x) = x
+removeSpaceFront x = x
+
+splitAtWords' :: String -> [String]
+splitAtWords' "" = []
+splitAtWords' ('\t' : xs) = "\t" : splitAtWords' xs -- tab
+splitAtWords' ('\n' : xs) = "\n" : splitAtWords' xs -- newline
+splitAtWords' xs = r1 : splitAtWords' r2
+  where
+    (r1, r2) = span (/= ' ') (removeSpaceFront xs)
+
+splitAtWords :: String -> [String]
+splitAtWords x = filter (/= "") (splitAtWords' x)
+
+lexer :: String -> [Token]
+lexer s = map classify (splitAtWords (preproc (convertSpacesToTabs  s)))
+
 --parser :: [Tokens] -> [Block]
 --printHTML :: [Block] -> String
 
@@ -129,9 +218,12 @@ main = do
   putStrLn ("Output: " ++ outfile) -- show output file name
   inHandle <- openFile infile ReadMode
   mdText <- hGetContents inHandle
+  putStrLn "=== INPUT CONTENTS ==="
   print mdText
-  --  let lexed = lexer mdText
+  let lexed = lexer mdText
+  putStrLn "=== LEXED TOKENS ==="
+  print lexed
   --  let parsed = parser lexed
   --  let html = printHTML parsed
   --  write html outfile
-  print "OK." -- inform user that program is done
+  print "OK. :)" -- inform user that program is done
