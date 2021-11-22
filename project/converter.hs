@@ -1,10 +1,18 @@
 -- This file is the group effort of Cameron Himes and Chase Faine
 
 {-
+  Sources (note: lines from these sources are marked with "from source #")
+
+  [1]: https://wiki.haskell.org/Tutorials/Programming_Haskell/Argument_handling
+  [2]: https://stackoverflow.com/a/20482547Submit
+  [3]: https://stackoverflow.com/a/7867786
+-}
+
+{-
 	Import Statements
 -}
 
-import System.Environment (getArgs)
+import System.Environment (getArgs) -- [from source 1]
 import System.IO (IOMode (ReadMode), hGetContents, openFile)
 
 {-
@@ -146,8 +154,8 @@ isValidOrderedList s =
 -- helper to convert four spaces to tabs
 convertSpacesToTabs :: String -> String
 convertSpacesToTabs "" = ""
-convertSpacesToTabs (' ':' ':' ':' ':xs) = "\t"++convertSpacesToTabs xs
-convertSpacesToTabs (x:xs) = x:convertSpacesToTabs xs
+convertSpacesToTabs (' ' : ' ' : ' ' : ' ' : xs) = "\t" ++ convertSpacesToTabs xs
+convertSpacesToTabs (x : xs) = x : convertSpacesToTabs xs
 
 -- helper to add spaces between symbols
 preproc :: String -> String
@@ -198,13 +206,13 @@ splitAtWords' ('\t' : xs) = "\t" : splitAtWords' xs -- tab
 splitAtWords' ('\n' : xs) = "\n" : splitAtWords' xs -- newline
 splitAtWords' xs = r1 : splitAtWords' r2
   where
-    (r1, r2) = span (/= ' ') (removeSpaceFront xs)
+    (r1, r2) = span (/= ' ') (removeSpaceFront xs) -- [from source 2]
 
 splitAtWords :: String -> [String]
 splitAtWords x = filter (/= "") (splitAtWords' x)
 
 lexer :: String -> [Token]
-lexer s = map classify (splitAtWords (preproc (convertSpacesToTabs  s)))
+lexer s = map classify (splitAtWords (preproc (convertSpacesToTabs s)))
 
 --parser :: [Tokens] -> [Block]
 --printHTML :: [Block] -> String
@@ -212,12 +220,12 @@ lexer s = map classify (splitAtWords (preproc (convertSpacesToTabs  s)))
 -- this is the backbone holding up the other functions
 main :: IO ()
 main = do
-  args <- getArgs -- get system args
+  args <- getArgs -- get system args [from source 1]
   let (infile, outfile) = getFiles args -- get file names
   putStrLn ("Input: " ++ infile) -- show input file name
   putStrLn ("Output: " ++ outfile) -- show output file name
-  inHandle <- openFile infile ReadMode
-  mdText <- hGetContents inHandle
+  inHandle <- openFile infile ReadMode -- [from source 3]
+  mdText <- hGetContents inHandle -- [from source 3]
   putStrLn "=== INPUT CONTENTS ==="
   print mdText
   let lexed = lexer mdText
