@@ -176,6 +176,7 @@ preproc ('\n' : xs) = ' ' : '\n' : ' ' : preproc xs -- Newline
 preproc ('\t' : xs) = ' ' : '\t' : ' ' : preproc xs -- Tab
 preproc (x : xs) = x : preproc xs -- GenericText
 
+-- this converts a single string to the correct token
 classify :: String -> Token
 classify [] = error "Token error: empty string."
 classify "#" = H1Op
@@ -196,10 +197,12 @@ classify x
   | isValidOrderedList x = OLOp
   | otherwise = GenericText x
 
+-- this removes the preceding space from a string (ex: " foo" -> "foo")
 removeSpaceFront :: String -> String
 removeSpaceFront (' ' : x) = x
 removeSpaceFront x = x
 
+-- this is a custom words function that does not remove tabs or newlines
 splitAtWords' :: String -> [String]
 splitAtWords' "" = []
 splitAtWords' ('\t' : xs) = "\t" : splitAtWords' xs -- tab
@@ -208,9 +211,11 @@ splitAtWords' xs = r1 : splitAtWords' r2
   where
     (r1, r2) = span (/= ' ') (removeSpaceFront xs) -- [from source 2]
 
+-- this is a wrapper for splitAtWords that removes empty strings from the list before returning
 splitAtWords :: String -> [String]
 splitAtWords x = filter (/= "") (splitAtWords' x)
 
+-- this is the actual lexer
 lexer :: String -> [Token]
 lexer s = map classify (splitAtWords (preproc (convertSpacesToTabs s)))
 
