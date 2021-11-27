@@ -27,17 +27,19 @@ data Inline
   | BoldItalic Text -- bold and italic text
   | Strikethrough Text -- strikethrough text
   | Preformatted Text -- inline code
-  deriving (Show)
+  deriving (Show, Eq)
+
+type ParagraphText = [Inline] -- a paragraph is made of many inline elements
 
 data Block
   = LI [Block] -- List Items
   | UL [Block] -- Unordered List
   | OL [Block] -- Ordered List
-  | Heading1 [Inline] -- Heading 1
-  | Heading2 [Inline] -- Heading 2
-  | Paragraph [Inline] -- Paragraph
-  | Code [Inline] -- Code block
-  deriving (Show)
+  | Heading1 ParagraphText -- Heading 1
+  | Heading2 ParagraphText -- Heading 2
+  | Paragraph ParagraphText -- a paragraph is made of text
+  | Code ParagraphText -- Code block
+  deriving (Show, Eq)
 
 type Document = [Block]
 
@@ -51,13 +53,16 @@ data Token
   | Dash -- used for unordered lists
   | OLOp -- used for ordered lists
   | Tab -- used for indentation
-  | NewLine -- used to shorten lines or end a block
+  | NewLine -- used to shorten lines
+  | EndBlock -- used to end a block
   | H1Op -- used for level 1 headings
   | H2Op -- used for level 2 headings
-  | B Block -- preparsed Block type
-  | I Inline -- preparsed Inline type
+  | PB Block -- preparsed Block type
+  | PI Inline -- preparsed Inline type
+  | PT [Inline] -- preparsed ParagraphText
   | GenericText Text -- generic Text type
-  deriving (Show)
+  | Err String -- error token
+  deriving (Show, Eq)
 
 {-
 	Examples
@@ -172,6 +177,7 @@ preproc ('`' : '`' : '`' : xs) = ' ' : '`' : '`' : '`' : ' ' : preproc xs -- Cod
 preproc ('`' : xs) = ' ' : '`' : ' ' : preproc xs -- Preformatted Case
 preproc ('-' : xs) = ' ' : '-' : ' ' : preproc xs -- Dash
 preproc ('~' : '~' : xs) = ' ' : '~' : '~' : ' ' : preproc xs -- Strikethrough Case
+preproc ('\n' : '\n' : xs) = ' ' : '\n' : '\n': ' ' : preproc xs -- Endline
 preproc ('\n' : xs) = ' ' : '\n' : ' ' : preproc xs -- Newline
 preproc ('\t' : xs) = ' ' : '\t' : ' ' : preproc xs -- Tab
 preproc (x : xs) = x : preproc xs -- GenericText
@@ -191,6 +197,7 @@ classify "```" = CodeOp
 classify "`" = PreformattedOp
 classify "-" = Dash
 classify "~~" = StrikethroughOp
+classify "\n\n" = EndBlock
 classify "\n" = NewLine
 classify "\t" = Tab
 classify x
@@ -219,8 +226,65 @@ splitAtWords x = filter (/= "") (splitAtWords' x)
 lexer :: String -> [Token]
 lexer s = map classify (splitAtWords (preproc (convertSpacesToTabs s)))
 
---parser :: [Tokens] -> [Block]
---printHTML :: [Block] -> String
+-- parser uses some code from lecture
+-- parser :: [Token] -> [Block]
+-- parser input = sr input []
+
+isUnparsedText :: Token -> Bool
+isUnparsedText BoldOp = True 
+isUnparsedText ItalicOp = True 
+isUnparsedText BoldItalicOp = True 
+isUnparsedText StrikethroughOp = True 
+isUnparsedText PreformattedOp = True 
+isUnparsedText (GenericText t) = True 
+isUnparsedText _ = False
+
+
+-- the shift-reduce helper
+sr :: [Token] -> [Token] -> [Block]
+sr (Err s : input) _ = error ("Lexical error: " ++ s) -- error case
+sr [] [PB b] = [b] -- promote the last block element
+--inline rules
+sr input (GenericText t   : rs)                                    = sr input (PI (Normal t): rs) -- promote text to normal text
+sr input (PI (Normal t2)  : PI (Normal t1)                   : rs) = sr input (PI (Normal (t1 ++ " " ++ t2)): rs)
+sr input (BoldOp          : PI (Normal t)  : BoldOp          : rs) = sr input (PI (Bold t): rs) -- promote text to bold text
+sr input (ItalicOp        : PI (Normal t)  : ItalicOp        : rs) = sr input (PI (Italic t): rs) -- promote text to italic text
+sr input (BoldItalicOp    : PI (Normal t)  : BoldItalicOp    : rs) = sr input (PI (BoldItalic t): rs) -- promote text to bold italic text
+sr input (StrikethroughOp : PI (Normal t)  : StrikethroughOp : rs) = sr input (PI (Strikethrough t): rs) -- promote text to strikethrough text
+sr input (PreformattedOp  : PI (Normal t)  : PreformattedOp  : rs) = sr input (PI (Preformatted t): rs) -- promote text to preformatted text
+sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PT [i]:x:rs) -- check if it is SAFE to promote the inline element
+-- inline rules with paragraph mode
+-- sr input (PT pt : GenericText t   : rs)                                    = sr input (PT pt : PI (Normal t): rs) -- promote text to normal text
+-- sr input (PT pt : BoldOp          : PI (Normal t)  : BoldOp          : rs) = sr input (PT pt : PI (Bold t): rs) -- promote text to bold text
+-- sr input (PT pt : ItalicOp        : PI (Normal t)  : ItalicOp        : rs) = sr input (PT pt : PI (Italic t): rs) -- promote text to italic text
+-- sr input (PT pt : BoldItalicOp    : PI (Normal t)  : BoldItalicOp    : rs) = sr input (PT pt : PI (BoldItalic t): rs) -- promote text to bold italic text
+-- sr input (PT pt : StrikethroughOp : PI (Normal t)  : StrikethroughOp : rs) = sr input (PT pt : PI (Strikethrough t): rs) -- promote text to strikethrough text
+-- sr input (PT pt : PreformattedOp  : PI (Normal t)  : PreformattedOp  : rs) = sr input (PT pt : PI (Preformatted t): rs) -- promote text to preformatted text
+sr input (PT pt : PI i : rs)                                               = sr input (PT (i:pt):rs)
+
+--block rules
+sr input (PT t : rs) = sr input (PB (Paragraph t):rs)
+-- sr input (CodeOp:(PI i):CodeOp:rs) = sr input (PB (Code [i]): rs)
+--shift-reduce rules
+sr (i:input) stack = sr input (i:stack) -- shift stack
+sr [p] stack        = error (show stack) -- ran out of options
+
+-- this splits a token list into several lists for each block element
+splitAtBlocks' :: [Token] -> [[Token]]
+splitAtBlocks' [] = [[]]
+splitAtBlocks' (x:xs) = [r1] ++ splitAtBlocks' r2
+  where
+    (r1, r2) = span (/= EndBlock) (if x == EndBlock then xs else x:xs) -- [from source 2]
+
+-- this is a wrapper for splitAtBlocks that removes empty blocks from the list before returning
+splitAtBlocks :: [Token] -> [[Token]]
+splitAtBlocks x = filter (/= []) (splitAtBlocks' x)
+
+
+
+--structureToHTML :: [Block] -> String
+
+--generateHTML :: [Block] -> String
 
 -- this is the backbone holding up the other functions
 main :: IO ()
@@ -236,7 +300,9 @@ main = do
   let lexed = lexer mdText
   putStrLn "=== LEXED TOKENS ==="
   print lexed
-  --  let parsed = parser lexed
-  --  let html = printHTML parsed
+  -- let parsed = parser lexed
+  -- putStrLn "=== PARSED TOKENS ==="
+  -- print parsed
+  --  let html = generateHTML parsed
   --  write html outfile
   print "OK. :)" -- inform user that program is done
