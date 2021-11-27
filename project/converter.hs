@@ -177,7 +177,7 @@ preproc ('`' : '`' : '`' : xs) = ' ' : '`' : '`' : '`' : ' ' : preproc xs -- Cod
 preproc ('`' : xs) = ' ' : '`' : ' ' : preproc xs -- Preformatted Case
 preproc ('-' : xs) = ' ' : '-' : ' ' : preproc xs -- Dash
 preproc ('~' : '~' : xs) = ' ' : '~' : '~' : ' ' : preproc xs -- Strikethrough Case
-preproc ('\n' : '\n' : xs) = ' ' : '\n' : '\n': ' ' : preproc xs -- Endline
+preproc ('\n' : '\n' : xs) = ' ' : '\n' : '\n' : ' ' : preproc xs -- Endline
 preproc ('\n' : xs) = ' ' : '\n' : ' ' : preproc xs -- Newline
 preproc ('\t' : xs) = ' ' : '\t' : ' ' : preproc xs -- Tab
 preproc (x : xs) = x : preproc xs -- GenericText
@@ -227,60 +227,55 @@ lexer :: String -> [Token]
 lexer s = map classify (splitAtWords (preproc (convertSpacesToTabs s)))
 
 -- parser uses some code from lecture
--- parser :: [Token] -> [Block]
--- parser input = sr input []
+parser :: [Token] -> [Block]
+parser input = parseEach (splitAtBlocks input)
+
+parseEach :: [[Token]] -> [Block]
+parseEach [[]] = []
+parseEach [x] = [sr x []]
+parseEach (x : xs) = sr x [] : parseEach xs
 
 isUnparsedText :: Token -> Bool
-isUnparsedText BoldOp = True 
-isUnparsedText ItalicOp = True 
-isUnparsedText BoldItalicOp = True 
-isUnparsedText StrikethroughOp = True 
-isUnparsedText PreformattedOp = True 
-isUnparsedText (GenericText t) = True 
+isUnparsedText BoldOp = True
+isUnparsedText ItalicOp = True
+isUnparsedText BoldItalicOp = True
+isUnparsedText StrikethroughOp = True
+isUnparsedText PreformattedOp = True
+isUnparsedText (GenericText t) = True
 isUnparsedText _ = False
 
-
 -- the shift-reduce helper
-sr :: [Token] -> [Token] -> [Block]
+sr :: [Token] -> [Token] -> Block
 sr (Err s : input) _ = error ("Lexical error: " ++ s) -- error case
-sr [] [PB b] = [b] -- promote the last block element
+sr [] [PB b] = b -- promote the last block element
 --inline rules
-sr input (GenericText t   : rs)                                    = sr input (PI (Normal t): rs) -- promote text to normal text
-sr input (PI (Normal t2)  : PI (Normal t1)                   : rs) = sr input (PI (Normal (t1 ++ " " ++ t2)): rs)
-sr input (BoldOp          : PI (Normal t)  : BoldOp          : rs) = sr input (PI (Bold t): rs) -- promote text to bold text
-sr input (ItalicOp        : PI (Normal t)  : ItalicOp        : rs) = sr input (PI (Italic t): rs) -- promote text to italic text
-sr input (BoldItalicOp    : PI (Normal t)  : BoldItalicOp    : rs) = sr input (PI (BoldItalic t): rs) -- promote text to bold italic text
-sr input (StrikethroughOp : PI (Normal t)  : StrikethroughOp : rs) = sr input (PI (Strikethrough t): rs) -- promote text to strikethrough text
-sr input (PreformattedOp  : PI (Normal t)  : PreformattedOp  : rs) = sr input (PI (Preformatted t): rs) -- promote text to preformatted text
-sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PT [i]:x:rs) -- check if it is SAFE to promote the inline element
--- inline rules with paragraph mode
--- sr input (PT pt : GenericText t   : rs)                                    = sr input (PT pt : PI (Normal t): rs) -- promote text to normal text
--- sr input (PT pt : BoldOp          : PI (Normal t)  : BoldOp          : rs) = sr input (PT pt : PI (Bold t): rs) -- promote text to bold text
--- sr input (PT pt : ItalicOp        : PI (Normal t)  : ItalicOp        : rs) = sr input (PT pt : PI (Italic t): rs) -- promote text to italic text
--- sr input (PT pt : BoldItalicOp    : PI (Normal t)  : BoldItalicOp    : rs) = sr input (PT pt : PI (BoldItalic t): rs) -- promote text to bold italic text
--- sr input (PT pt : StrikethroughOp : PI (Normal t)  : StrikethroughOp : rs) = sr input (PT pt : PI (Strikethrough t): rs) -- promote text to strikethrough text
--- sr input (PT pt : PreformattedOp  : PI (Normal t)  : PreformattedOp  : rs) = sr input (PT pt : PI (Preformatted t): rs) -- promote text to preformatted text
-sr input (PT pt : PI i : rs)                                               = sr input (PT (i:pt):rs)
-
+sr input (GenericText t : rs) = sr input (PI (Normal t) : rs) -- promote text to normal text
+sr input (PI (Normal t2) : PI (Normal t1) : rs) = sr input (PI (Normal (t1 ++ " " ++ t2)) : rs)
+sr input (BoldOp : PI (Normal t) : BoldOp : rs) = sr input (PI (Bold t) : rs) -- promote text to bold text
+sr input (ItalicOp : PI (Normal t) : ItalicOp : rs) = sr input (PI (Italic t) : rs) -- promote text to italic text
+sr input (BoldItalicOp : PI (Normal t) : BoldItalicOp : rs) = sr input (PI (BoldItalic t) : rs) -- promote text to bold italic text
+sr input (StrikethroughOp : PI (Normal t) : StrikethroughOp : rs) = sr input (PI (Strikethrough t) : rs) -- promote text to strikethrough text
+sr input (PreformattedOp : PI (Normal t) : PreformattedOp : rs) = sr input (PI (Preformatted t) : rs) -- promote text to preformatted text
 --block rules
-sr input (PT t : rs) = sr input (PB (Paragraph t):rs)
--- sr input (CodeOp:(PI i):CodeOp:rs) = sr input (PB (Code [i]): rs)
+sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PB (Paragraph [i]) : x : rs) -- check if it is SAFE to promote the inline element
+sr input [PI i] = sr input [PB (Paragraph [i])] -- if the only thing left is a single text, promote it to a paragraph
+sr input (PB (Paragraph p) : PI i : rs) = sr input (PB (Paragraph (i : p)) : rs) -- append text to a paragraph
+sr input (PB (Paragraph p2) : PB (Paragraph p1) : rs) = sr input (PB (Paragraph (p1 ++ p2)) : rs) -- merge two paragraphs together
 --shift-reduce rules
-sr (i:input) stack = sr input (i:stack) -- shift stack
-sr [p] stack        = error (show stack) -- ran out of options
+sr (i : input) stack = sr input (i : stack) -- shift stack
+sr input stack = error (show input ++ show stack) -- ran out of pattern matches
+sr [p] stack = error (show stack) -- ran out of options
 
 -- this splits a token list into several lists for each block element
 splitAtBlocks' :: [Token] -> [[Token]]
 splitAtBlocks' [] = [[]]
-splitAtBlocks' (x:xs) = [r1] ++ splitAtBlocks' r2
+splitAtBlocks' (x : xs) = r1 : splitAtBlocks' r2
   where
-    (r1, r2) = span (/= EndBlock) (if x == EndBlock then xs else x:xs) -- [from source 2]
+    (r1, r2) = span (/= EndBlock) (if x == EndBlock then xs else x : xs) -- [from source 2]
 
 -- this is a wrapper for splitAtBlocks that removes empty blocks from the list before returning
 splitAtBlocks :: [Token] -> [[Token]]
 splitAtBlocks x = filter (/= []) (splitAtBlocks' x)
-
-
 
 --structureToHTML :: [Block] -> String
 
