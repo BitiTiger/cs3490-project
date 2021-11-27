@@ -226,15 +226,7 @@ splitAtWords x = filter (/= "") (splitAtWords' x)
 lexer :: String -> [Token]
 lexer s = map classify (splitAtWords (preproc (convertSpacesToTabs s)))
 
--- parser uses some code from lecture
-parser :: [Token] -> [Block]
-parser input = parseEach (splitAtBlocks input)
-
-parseEach :: [[Token]] -> [Block]
-parseEach [[]] = []
-parseEach [x] = [sr x []]
-parseEach (x : xs) = sr x [] : parseEach xs
-
+-- this checks if the next token is unparsed text
 isUnparsedText :: Token -> Bool
 isUnparsedText BoldOp = True
 isUnparsedText ItalicOp = True
@@ -276,6 +268,16 @@ splitAtBlocks' (x : xs) = r1 : splitAtBlocks' r2
 -- this is a wrapper for splitAtBlocks that removes empty blocks from the list before returning
 splitAtBlocks :: [Token] -> [[Token]]
 splitAtBlocks x = filter (/= []) (splitAtBlocks' x)
+
+-- parses each block individually
+parseEach :: [[Token]] -> [Block]
+parseEach [[]] = []
+parseEach [x] = [sr x []]
+parseEach (x : xs) = sr x [] : parseEach xs
+
+-- parser uses some code from lecture
+parser :: [Token] -> [Block]
+parser input = parseEach (splitAtBlocks input)
 
 --structureToHTML :: [Block] -> String
 
