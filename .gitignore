@@ -1,5 +1,6 @@
-# the generated pdf file
+# the generated pdf files
 proposal/proposal-preview.pdf
+outline/outline-preview.pdf
 # haskell compilation files
 project/converter.hi
 project/converter.o
