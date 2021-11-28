@@ -256,6 +256,7 @@ isUnparsedText _ = False
 sr :: [Token] -> [Token] -> Block
 sr (Err s : input) _ = error ("Lexical error: " ++ s) -- error case
 sr [] [PB b] = b -- promote the last block element
+sr input (NewLine : rs) = sr input rs
 --inline rules
 sr input (GenericText t : rs) = sr input (PI (Normal t) : rs) -- promote text to normal text
 sr input (PI (Normal t2) : PI (Normal t1) : rs) = sr input (PI (Normal (t1 ++ " " ++ t2)) : rs)
@@ -281,6 +282,7 @@ sr input (PB (Paragraph p) : H5Op : rs) = sr input (PB (Heading5 p):rs) -- conve
 sr input (PB (Paragraph p) : PB (Heading5 h) : rs) = sr input (PB (Heading5 (h ++ p)):rs) -- merge paragraph into heading 5
 sr input (PB (Paragraph p) : H6Op : rs) = sr input (PB (Heading6 p):rs) -- convert paragraph to heading 6
 sr input (PB (Paragraph p) : PB (Heading6 h) : rs) = sr input (PB (Heading6 (h ++ p)):rs) -- merge paragraph into heading 6
+sr input (CodeOp : PB (Paragraph p) : CodeOp : rs) = sr input (PB (Code p):rs) -- convert paragraph to code block
 --shift-reduce rules
 sr (i : input) stack = sr input (i : stack) -- shift stack
 sr input stack = error (show input ++ show stack) -- ran out of pattern matches
