@@ -37,6 +37,10 @@ data Block
   | OL [Block] -- Ordered List
   | Heading1 ParagraphText -- Heading 1
   | Heading2 ParagraphText -- Heading 2
+  | Heading3 ParagraphText -- Heading 3
+  | Heading4 ParagraphText -- Heading 4
+  | Heading5 ParagraphText -- Heading 5
+  | Heading6 ParagraphText -- Heading 6
   | Paragraph ParagraphText -- a paragraph is made of text
   | Code ParagraphText -- Code block
   deriving (Show, Eq)
@@ -57,6 +61,10 @@ data Token
   | EndBlock -- used to end a block
   | H1Op -- used for level 1 headings
   | H2Op -- used for level 2 headings
+  | H3Op -- used for level 3 headings
+  | H4Op -- used for level 4 headings
+  | H5Op -- used for level 5 headings
+  | H6Op -- used for level 6 headings
   | PB Block -- preparsed Block type
   | PI Inline -- preparsed Inline type
   | PT [Inline] -- preparsed ParagraphText
@@ -165,6 +173,10 @@ convertSpacesToTabs (x : xs) = x : convertSpacesToTabs xs
 -- helper to add spaces between symbols
 preproc :: String -> String
 preproc "" = "" -- Base Case
+preproc ('#' : '#' : '#' : '#' : '#' : '#' : xs) = ' ' : '#' : '#' : '#' : '#' : '#' : '#' : ' ' : preproc xs -- Header6 Case
+preproc ('#' : '#' : '#' : '#' : '#' : xs) = ' ' : '#' : '#' : '#' : '#' : '#' : ' ' : preproc xs -- Header5 Case
+preproc ('#' : '#' : '#' : '#' : xs) = ' ' : '#' : '#' : '#' : '#' : ' ' : preproc xs -- Header4 Case
+preproc ('#' : '#' : '#' : xs) = ' ' : '#' : '#' : '#' : ' ' : preproc xs -- Header3 Case
 preproc ('#' : '#' : xs) = ' ' : '#' : '#' : ' ' : preproc xs -- Header2 Case
 preproc ('#' : xs) = ' ' : '#' : ' ' : preproc xs -- Header1 Case
 preproc ('*' : '*' : '*' : xs) = ' ' : '*' : '*' : '*' : ' ' : preproc xs -- BoldItalic Case
@@ -187,6 +199,10 @@ classify :: String -> Token
 classify [] = error "Token error: empty string."
 classify "#" = H1Op
 classify "##" = H2Op
+classify "###" = H3Op
+classify "####" = H4Op
+classify "#####" = H5Op
+classify "######" = H6Op
 classify "***" = BoldItalicOp
 classify "**" = BoldOp
 classify "*" = ItalicOp
@@ -253,10 +269,23 @@ sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PB (Paragraph [i])
 sr input [PI i] = sr input [PB (Paragraph [i])] -- if the only thing left is a single text, promote it to a paragraph
 sr input (PB (Paragraph p) : PI i : rs) = sr input (PB (Paragraph (i : p)) : rs) -- append text to a paragraph
 sr input (PB (Paragraph p2) : PB (Paragraph p1) : rs) = sr input (PB (Paragraph (p1 ++ p2)) : rs) -- merge two paragraphs together
+sr input (PB (Paragraph p) : H1Op : rs) = sr input (PB (Heading1 p):rs) -- convert paragraph to heading 1
+sr input (PB (Paragraph p) : PB (Heading1 h) : rs) = sr input (PB (Heading1 (h ++ p)):rs) -- merge paragraph into heading 1
+sr input (PB (Paragraph p) : H2Op : rs) = sr input (PB (Heading2 p):rs) -- convert paragraph to heading 2
+sr input (PB (Paragraph p) : PB (Heading2 h) : rs) = sr input (PB (Heading2 (h ++ p)):rs) -- merge paragraph into heading 2
+sr input (PB (Paragraph p) : H3Op : rs) = sr input (PB (Heading3 p):rs) -- convert paragraph to heading 3
+sr input (PB (Paragraph p) : PB (Heading3 h) : rs) = sr input (PB (Heading3 (h ++ p)):rs) -- merge paragraph into heading 3
+sr input (PB (Paragraph p) : H4Op : rs) = sr input (PB (Heading4 p):rs) -- convert paragraph to heading 4
+sr input (PB (Paragraph p) : PB (Heading4 h) : rs) = sr input (PB (Heading4 (h ++ p)):rs) -- merge paragraph into heading 4
+sr input (PB (Paragraph p) : H5Op : rs) = sr input (PB (Heading5 p):rs) -- convert paragraph to heading 5
+sr input (PB (Paragraph p) : PB (Heading5 h) : rs) = sr input (PB (Heading5 (h ++ p)):rs) -- merge paragraph into heading 5
+sr input (PB (Paragraph p) : H6Op : rs) = sr input (PB (Heading6 p):rs) -- convert paragraph to heading 6
+sr input (PB (Paragraph p) : PB (Heading6 h) : rs) = sr input (PB (Heading6 (h ++ p)):rs) -- merge paragraph into heading 6
 --shift-reduce rules
 sr (i : input) stack = sr input (i : stack) -- shift stack
 sr input stack = error (show input ++ show stack) -- ran out of pattern matches
 sr [p] stack = error (show stack) -- ran out of options
+
 
 -- this splits a token list into several lists for each block element
 splitAtBlocks' :: [Token] -> [[Token]]
