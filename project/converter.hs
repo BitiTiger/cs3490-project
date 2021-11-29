@@ -103,7 +103,8 @@ doc1 =
 doc2 :: Document
 doc2 =
   [ Heading1 [Normal "The Top 3 Programming Languages"],
-    OL 0
+    OL
+      0
       [ LI [Paragraph [Normal "Python"]],
         LI [Paragraph [Normal "JavaScript"]],
         LI [Paragraph [Normal "GoLang"]]
@@ -114,17 +115,20 @@ doc2 =
 doc3 :: Document
 doc3 =
   [ Heading1 [Normal "The families of programming languages"],
-    UL 0
+    UL
+      0
       [ LI
           [ Paragraph [Normal "Machine Code"],
-            OL 1
+            OL
+              1
               [ LI [Paragraph [Normal "CISC"]],
                 LI [Paragraph [Normal "RISC"]]
               ]
           ],
         LI
           [ Paragraph [Normal "Assembly"],
-            OL 1
+            OL
+              1
               [ LI [Paragraph [Normal "ARM"]],
                 LI [Paragraph [Normal "X86"]],
                 LI [Paragraph [Normal "6502"]]
@@ -132,7 +136,8 @@ doc3 =
           ],
         LI
           [ Paragraph [Normal "High Level"],
-            OL 1
+            OL
+              1
               [ LI [Paragraph [Normal "C"]],
                 LI [Paragraph [Normal "Haskell"]],
                 LI [Paragraph [Normal "JavaScript"]]
@@ -273,28 +278,28 @@ sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PB (Paragraph [i])
 sr input [PI i] = sr input [PB (Paragraph [i])] -- if the only thing left is a single text, promote it to a paragraph
 sr input (PB (Paragraph p) : PI i : rs) = sr input (PB (Paragraph (i : p)) : rs) -- append text to a paragraph
 sr input (PB (Paragraph p2) : PB (Paragraph p1) : rs) = sr input (PB (Paragraph (p1 ++ p2)) : rs) -- merge two paragraphs together
-sr input (PB (Paragraph p) : H1Op : rs) = sr input (PB (Heading1 p):rs) -- convert paragraph to heading 1
-sr input (PB (Paragraph p) : PB (Heading1 h) : rs) = sr input (PB (Heading1 (h ++ p)):rs) -- merge paragraph into heading 1
-sr input (PB (Paragraph p) : H2Op : rs) = sr input (PB (Heading2 p):rs) -- convert paragraph to heading 2
-sr input (PB (Paragraph p) : PB (Heading2 h) : rs) = sr input (PB (Heading2 (h ++ p)):rs) -- merge paragraph into heading 2
-sr input (PB (Paragraph p) : H3Op : rs) = sr input (PB (Heading3 p):rs) -- convert paragraph to heading 3
-sr input (PB (Paragraph p) : PB (Heading3 h) : rs) = sr input (PB (Heading3 (h ++ p)):rs) -- merge paragraph into heading 3
-sr input (PB (Paragraph p) : H4Op : rs) = sr input (PB (Heading4 p):rs) -- convert paragraph to heading 4
-sr input (PB (Paragraph p) : PB (Heading4 h) : rs) = sr input (PB (Heading4 (h ++ p)):rs) -- merge paragraph into heading 4
-sr input (PB (Paragraph p) : H5Op : rs) = sr input (PB (Heading5 p):rs) -- convert paragraph to heading 5
-sr input (PB (Paragraph p) : PB (Heading5 h) : rs) = sr input (PB (Heading5 (h ++ p)):rs) -- merge paragraph into heading 5
-sr input (PB (Paragraph p) : H6Op : rs) = sr input (PB (Heading6 p):rs) -- convert paragraph to heading 6
-sr input (PB (Paragraph p) : PB (Heading6 h) : rs) = sr input (PB (Heading6 (h ++ p)):rs) -- merge paragraph into heading 6
-sr input (CodeOp : PB (Paragraph p) : CodeOp : rs) = sr input (PB (Code p):rs) -- convert paragraph to code block
-sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (OL 0 [LI [Paragraph p]]):rs) -- promote paragraph to ordered list
-sr input (PB (OL i o) : Tab : rs) = sr input (PB (OL (i+1) o):rs) -- increase indentation on ordered list
-sr input (PB (OL i2 o2) : PB (OL i1 o1) : rs) | i2 == i1 = sr input (PB (OL i1 (o1++o2)):rs) -- merge ordered lists of same level
-                                              | i2 > i1 = sr input (PB (OL i1 (o1++[LI [OL i2 o2]])):rs) -- merge child ordered list
---shift-reduce rules
+sr input (PB (Paragraph p) : H1Op : rs) = sr input (PB (Heading1 p) : rs) -- convert paragraph to heading 1
+sr input (PB (Paragraph p) : PB (Heading1 h) : rs) = sr input (PB (Heading1 (h ++ p)) : rs) -- merge paragraph into heading 1
+sr input (PB (Paragraph p) : H2Op : rs) = sr input (PB (Heading2 p) : rs) -- convert paragraph to heading 2
+sr input (PB (Paragraph p) : PB (Heading2 h) : rs) = sr input (PB (Heading2 (h ++ p)) : rs) -- merge paragraph into heading 2
+sr input (PB (Paragraph p) : H3Op : rs) = sr input (PB (Heading3 p) : rs) -- convert paragraph to heading 3
+sr input (PB (Paragraph p) : PB (Heading3 h) : rs) = sr input (PB (Heading3 (h ++ p)) : rs) -- merge paragraph into heading 3
+sr input (PB (Paragraph p) : H4Op : rs) = sr input (PB (Heading4 p) : rs) -- convert paragraph to heading 4
+sr input (PB (Paragraph p) : PB (Heading4 h) : rs) = sr input (PB (Heading4 (h ++ p)) : rs) -- merge paragraph into heading 4
+sr input (PB (Paragraph p) : H5Op : rs) = sr input (PB (Heading5 p) : rs) -- convert paragraph to heading 5
+sr input (PB (Paragraph p) : PB (Heading5 h) : rs) = sr input (PB (Heading5 (h ++ p)) : rs) -- merge paragraph into heading 5
+sr input (PB (Paragraph p) : H6Op : rs) = sr input (PB (Heading6 p) : rs) -- convert paragraph to heading 6
+sr input (PB (Paragraph p) : PB (Heading6 h) : rs) = sr input (PB (Heading6 (h ++ p)) : rs) -- merge paragraph into heading 6
+sr input (CodeOp : PB (Paragraph p) : CodeOp : rs) = sr input (PB (Code p) : rs) -- convert paragraph to code block
+sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (OL 0 [LI [Paragraph p]]) : rs) -- promote paragraph to ordered list
+sr input (PB (OL i o) : Tab : rs) = sr input (PB (OL (i + 1) o) : rs) -- increase indentation on ordered list
+sr input (PB (OL i2 o2) : PB (OL i1 o1) : rs)
+  | i2 == i1 = sr input (PB (OL i1 (o1 ++ o2)) : rs) -- merge ordered lists of same level
+  | i2 > i1 = sr input (PB (OL i1 (o1 ++ [LI [OL i2 o2]])) : rs) -- merge child ordered list
+  --shift-reduce rules
 sr (i : input) stack = sr input (i : stack) -- shift stack
 sr input stack = error (show input ++ show stack) -- ran out of pattern matches
 sr [p] stack = error (show stack) -- ran out of options
-
 
 -- this splits a token list into several lists for each block element
 splitAtBlocks' :: [Token] -> [[Token]]
@@ -353,12 +358,11 @@ blockToHTML (x : xs) = case x of
 
 -- this generates the entire HTML webpage
 generateHTML :: [Block] -> String
-generateHTML x = let
-  top = "<!doctype html><html lang='en'><head><meta charset='utf-8'><title>My Webpage</title></head><body>"
-  middle = blockToHTML x
-  bottom = "</body></html>"
-  in
-    top ++ middle ++ bottom
+generateHTML x =
+  let top = "<!doctype html><html lang='en'><head><meta charset='utf-8'><title>My Webpage</title></head><body>"
+      middle = blockToHTML x
+      bottom = "</body></html>"
+   in top ++ middle ++ bottom
 
 -- this is the backbone holding up the other functions
 main :: IO ()
