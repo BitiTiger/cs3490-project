@@ -157,11 +157,14 @@ isValidOrderedList :: String -> Bool
 isValidOrderedList s =
   let q0 "" = False
       q0 (x : xs)
-        | x `elem` ['0' .. '9'] = q0 xs
-        | x == '.' = q1 xs
+        | x `elem` ['0' .. '9'] = q1 xs
         | otherwise = False
-      q1 [] = True
-      q1 xs = False
+      q1 (x : xs)
+        | x `elem` ['0' .. '9'] = q1 xs
+        | x == '.' = q2 xs
+        | otherwise = False
+      q2 [] = True
+      q2 xs = False
    in q0 s
 
 -- helper to convert four spaces to tabs
