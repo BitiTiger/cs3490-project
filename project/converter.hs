@@ -322,7 +322,7 @@ inlineToHTML (x : xs) = case x of
   (Italic t) -> " <em>" ++ t ++ "</em> " ++ inlineToHTML xs
   (BoldItalic t) -> " <strong><em>" ++ t ++ "</em></strong> " ++ inlineToHTML xs
   (Strikethrough t) -> " <del>" ++ t ++ "</del> " ++ inlineToHTML xs
-  (Preformatted t) -> " <span style=\"font-family:monospace\">" ++ t ++ "</span> " ++ inlineToHTML xs
+  (Preformatted t) -> " <span style='font-family:monospace'>" ++ t ++ "</span> " ++ inlineToHTML xs
 
 -- convert inline elements back to their original form
 codeParagraphToHTML :: [Inline] -> String
@@ -345,12 +345,12 @@ blockToHTML (x : xs) = case x of
   (Heading1 t) -> " <h1>" ++ inlineToHTML t ++ "</h1> " ++ blockToHTML xs
   (Heading2 t) -> " <h2>" ++ inlineToHTML t ++ "</h2> " ++ blockToHTML xs
   (Paragraph t) -> " <p>" ++ inlineToHTML t ++ "</p> " ++ blockToHTML xs
-  (Code t) -> " <p style=\"font-family:monospace\">" ++ codeParagraphToHTML t ++ "</h1> " ++ blockToHTML xs
+  (Code t) -> " <p style='font-family:monospace'>" ++ codeParagraphToHTML t ++ "</h1> " ++ blockToHTML xs
 
 -- this generates the entire HTML webpage
 generateHTML :: [Block] -> String
 generateHTML x = let
-  top = "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>My Webpage</title></head><body>"
+  top = "<!doctype html><html lang='en'><head><meta charset='utf-8'><title>My Webpage</title></head><body>"
   middle = blockToHTML x
   bottom = "</body></html>"
   in
