@@ -317,7 +317,7 @@ parser input = parseEach (splitAtBlocks input)
 inlineToHTML :: [Inline] -> String
 inlineToHTML [] = ""
 inlineToHTML (x : xs) = case x of
-  (Normal t) -> t ++ inlineToHTML xs
+  (Normal t) -> t ++ " " ++ inlineToHTML xs
   (Bold t) -> " <strong>" ++ t ++ "</strong> " ++ inlineToHTML xs
   (Italic t) -> " <em>" ++ t ++ "</em> " ++ inlineToHTML xs
   (BoldItalic t) -> " <strong><em>" ++ t ++ "</em></strong> " ++ inlineToHTML xs
