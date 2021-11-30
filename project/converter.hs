@@ -336,7 +336,7 @@ sr input (PB (Paragraph p) : PB (Heading6 h) : rs) = sr input (PB (Heading6 (h +
 sr input (CodeOp : PB (Paragraph p) : CodeOp : rs) = sr input (PB (Code p) : rs) -- convert paragraph to code block
 sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (List OrderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to ordered list
 sr input (PB (Paragraph p) : Dash : rs) = sr input (PB (List UnorderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to unordered list
-sr input (PB (Paragraph p) : PB (List t i o) : rs) = sr input (PB (List t i (addParagraphToList (Paragraph p) o)) : rs)
+sr input (PB (Paragraph p) : PB (List t i o) : rs) = sr input (PB (List t i (addParagraphToList (Paragraph p) o)) : rs) -- merge paragraph into list
 sr input (PB (List t i o) : Tab : rs) = sr input (PB (List t (i + 1) o) : rs) -- increase indentation on a list
 sr input (PB (List t2 i2 o2) : PB (List t1 i1 o1) : rs) = sr input (PB (mergeLists (List t1 i1 o1) (List t2 i2 o2)) : rs) -- merge the lists
 --shift-reduce rules
