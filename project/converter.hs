@@ -13,7 +13,8 @@
 -}
 
 import System.Environment (getArgs) -- [from source 1]
-import System.IO (IOMode (ReadMode), hGetContents, openFile)
+-- [from source 1]
+import System.IO (IOMode (ReadMode, WriteMode), hGetContents, openFile, hClose, hPutStrLn) -- [from source 3]
 
 {-
 	Data Type Definitions
@@ -410,20 +411,31 @@ generateHTML x =
 -- this is the backbone holding up the other functions
 main :: IO ()
 main = do
+  -- get file paths
   args <- getArgs -- get system args [from source 1]
   let (infile, outfile) = getFiles args -- get file names
   putStrLn ("Input: " ++ infile) -- show input file name
   putStrLn ("Output: " ++ outfile) -- show output file name
+  -- read the file
   inHandle <- openFile infile ReadMode -- [from source 3]
   mdText <- hGetContents inHandle -- [from source 3]
   putStrLn "=== INPUT CONTENTS ==="
   print mdText
+  -- run the lexer
   let lexed = lexer mdText
   putStrLn "=== LEXED TOKENS ==="
   print lexed
-  -- let parsed = parser lexed
-  -- putStrLn "=== PARSED TOKENS ==="
-  -- print parsed
-  --  let html = generateHTML parsed
-  --  write html outfile
+  -- run the parser
+  let parsed = parser lexed
+  putStrLn "=== PARSED TOKENS ==="
+  print parsed
+  -- run the converter
+  let html = generateHTML parsed
+  -- write the html file
+  outHandle <- openFile outfile WriteMode -- [inferred from source 3]
+  hPutStrLn outHandle html -- [inferred from source 3]
+  -- close handles
+  hClose inHandle -- [from source 3]
+  hClose outHandle -- [from source 3]
+  -- end the program
   print "OK. :)" -- inform user that program is done
