@@ -107,7 +107,9 @@ doc1 =
 doc2 :: Document
 doc2 =
   [ Heading1 [Normal "The Top 3 Programming Languages"],
-    List OrderedList 0
+    List
+      OrderedList
+      0
       [ LI [Paragraph [Normal "Python"]],
         LI [Paragraph [Normal "JavaScript"]],
         LI [Paragraph [Normal "GoLang"]]
@@ -118,17 +120,23 @@ doc2 =
 doc3 :: Document
 doc3 =
   [ Heading1 [Normal "The families of programming languages"],
-    List UnorderedList 0
+    List
+      UnorderedList
+      0
       [ LI
           [ Paragraph [Normal "Machine Code"],
-            List OrderedList 1
+            List
+              OrderedList
+              1
               [ LI [Paragraph [Normal "CISC"]],
                 LI [Paragraph [Normal "RISC"]]
               ]
           ],
         LI
           [ Paragraph [Normal "Assembly"],
-            List OrderedList 1
+            List
+              OrderedList
+              1
               [ LI [Paragraph [Normal "ARM"]],
                 LI [Paragraph [Normal "X86"]],
                 LI [Paragraph [Normal "6502"]]
@@ -136,7 +144,9 @@ doc3 =
           ],
         LI
           [ Paragraph [Normal "High Level"],
-            List OrderedList 1
+            List
+              OrderedList
+              1
               [ LI [Paragraph [Normal "C"]],
                 LI [Paragraph [Normal "Haskell"]],
                 LI [Paragraph [Normal "JavaScript"]]
@@ -260,6 +270,29 @@ isUnparsedText PreformattedOp = True
 isUnparsedText (GenericText t) = True
 isUnparsedText _ = False
 
+-- this checks if there might be another list in an array
+containsList :: [Block] -> Bool
+containsList [] = False
+containsList (x : xs) = case x of
+  (LI {}) -> True
+  _ -> containsList xs
+
+-- this tries to add a new child list to an existing list (iteratively)
+mapLists :: [Block] -> Block -> [Block]
+mapLists [] (List t2 i2 o2) = [List t2 i2 o2]
+mapLists ((List t1 i1 o1) : xs) (List t2 i2 o2) =
+  if containsList xs
+    then List t1 i1 o1 : mapLists xs (List t2 i2 o2)
+    else mergeLists (List t1 i1 o1) (List t2 i2 o2) : xs
+mapLists (x : xs) (List t2 i2 o2) = x : mapLists xs (List t2 i2 o2)
+
+-- this tries to add a child list to an existing list (recursively)
+mergeLists :: Block -> Block -> Block
+mergeLists (List t1 i1 o1) (List t2 i2 o2)
+  | i1 == i2 && t1 == t2 = List t1 i1 (o1 ++ o2) -- they match, so merge them
+  | otherwise = List t1 i1 (mapLists o1 (List t2 i2 o2)) -- try to insert recursively
+mergeLists _ _ = error "both arguments must be lists"
+
 -- the shift-reduce helper
 sr :: [Token] -> [Token] -> Block
 sr (Err s : input) _ = error ("Lexical error: " ++ s) -- error case
@@ -294,10 +327,8 @@ sr input (CodeOp : PB (Paragraph p) : CodeOp : rs) = sr input (PB (Code p) : rs)
 sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (List OrderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to ordered list
 sr input (PB (Paragraph p) : Dash : rs) = sr input (PB (List UnorderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to unordered list
 sr input (PB (List t i o) : Tab : rs) = sr input (PB (List t (i + 1) o) : rs) -- increase indentation on a list
-sr input (PB (List t2 i2 o2) : PB (List t1 i1 o1) : rs)
-  | i2 == i1 && t2 == t1 = sr input (PB (List t1 i1 (o1 ++ o2)) : rs) -- merge lists of same level and type
-  | i2 > i1 = sr input (PB ( List t1 i1 (o1++[List t2 i2 o2]) ) : rs) -- merge child ordered list
-  --shift-reduce rules
+sr input (PB (List t2 i2 o2) : PB (List t1 i1 o1) : rs) = sr input (PB (mergeLists (List t1 i1 o1) (List t2 i2 o2)) : rs) -- merge the lists
+--shift-reduce rules
 sr (i : input) stack = sr input (i : stack) -- shift stack
 sr input stack = error (show input ++ show stack) -- ran out of pattern matches
 sr [p] stack = error (show stack) -- ran out of options
