@@ -296,12 +296,12 @@ sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (OL 0 [LI [Paragraph p]])
 sr input (PB (OL i o) : Tab : rs) = sr input (PB (OL (i + 1) o) : rs) -- increase indentation on ordered list
 sr input (PB (OL i2 o2) : PB (OL i1 o1) : rs)
   | i2 == i1 = sr input (PB (OL i1 (o1 ++ o2)) : rs) -- merge ordered lists of same level
-  | i2 > i1 = sr input (PB (OL i1 (o1 ++ [LI [OL i2 o2]])) : rs) -- merge child ordered list
+  | i2 > i1 = sr input (PB ( OL i1 (o1++[OL i2 o2]) ) : rs) -- merge child ordered list
 sr input (PB (Paragraph p) : Dash : rs) = sr input (PB (UL 0 [LI [Paragraph p]]) : rs) -- promote paragraph to unordered list
 sr input (PB (UL i o) : Tab : rs) = sr input (PB (UL (i + 1) o) : rs) -- increase indentation on unordered list
 sr input (PB (UL i2 o2) : PB (UL i1 o1) : rs)
   | i2 == i1 = sr input (PB (UL i1 (o1 ++ o2)) : rs) -- merge unordered lists of same level
-  | i2 > i1 = sr input (PB (UL i1 (o1 ++ [LI [UL i2 o2]])) : rs) -- merge child unordered list
+  | i2 > i1 = sr input (PB (UL i1 (o1 ++ [UL i2 o2])) : rs) -- merge child unordered list
   --shift-reduce rules
 sr (i : input) stack = sr input (i : stack) -- shift stack
 sr input stack = error (show input ++ show stack) -- ran out of pattern matches
