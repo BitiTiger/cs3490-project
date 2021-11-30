@@ -293,6 +293,16 @@ mergeLists (List t1 i1 o1) (List t2 i2 o2)
   | otherwise = List t1 i1 (mapLists o1 (List t2 i2 o2)) -- try to insert recursively
 mergeLists _ _ = error "both arguments must be lists"
 
+--                     p          os        pos
+addParagraphToList :: Block -> [Block] -> [Block]
+addParagraphToList (Paragraph p) [] = [LI [Paragraph p]]
+addParagraphToList (Paragraph p) (o : os) =
+  if containsList os
+    then o : addParagraphToList (Paragraph p) os
+    else case o of
+      LI [Paragraph p2] -> LI [Paragraph (p2 ++ p)] : os
+      LI [_] -> LI [o, Paragraph p] : os
+
 -- the shift-reduce helper
 sr :: [Token] -> [Token] -> Block
 sr (Err s : input) _ = error ("Lexical error: " ++ s) -- error case
@@ -326,6 +336,7 @@ sr input (PB (Paragraph p) : PB (Heading6 h) : rs) = sr input (PB (Heading6 (h +
 sr input (CodeOp : PB (Paragraph p) : CodeOp : rs) = sr input (PB (Code p) : rs) -- convert paragraph to code block
 sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (List OrderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to ordered list
 sr input (PB (Paragraph p) : Dash : rs) = sr input (PB (List UnorderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to unordered list
+sr input (PB (Paragraph p) : PB (List t i o) : rs) = sr input (PB (List t i (addParagraphToList (Paragraph p) o)) : rs)
 sr input (PB (List t i o) : Tab : rs) = sr input (PB (List t (i + 1) o) : rs) -- increase indentation on a list
 sr input (PB (List t2 i2 o2) : PB (List t1 i1 o1) : rs) = sr input (PB (mergeLists (List t1 i1 o1) (List t2 i2 o2)) : rs) -- merge the lists
 --shift-reduce rules
