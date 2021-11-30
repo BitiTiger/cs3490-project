@@ -274,7 +274,7 @@ isUnparsedText _ = False
 containsList :: [Block] -> Bool
 containsList [] = False
 containsList (x : xs) = case x of
-  (LI {}) -> True
+  (LI {}) -> True -- NOTE: Lists are INSIDE of list items, so I used LI instead of List
   _ -> containsList xs
 
 -- this tries to add a new child list to an existing list (iteratively)
