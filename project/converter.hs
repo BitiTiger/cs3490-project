@@ -294,7 +294,7 @@ mergeLists (List t1 i1 o1) (List t2 i2 o2)
   | otherwise = List t1 i1 (mapLists o1 (List t2 i2 o2)) -- try to insert recursively
 mergeLists _ _ = error "both arguments must be lists"
 
---                     p          os        pos
+-- this appends a paragraph to a list entry
 addParagraphToList :: Block -> [Block] -> [Block]
 addParagraphToList (Paragraph p) [] = [LI [Paragraph p]]
 addParagraphToList (Paragraph p) (o : os) =
