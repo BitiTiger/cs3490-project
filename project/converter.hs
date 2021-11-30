@@ -31,10 +31,14 @@ data Inline
 
 type ParagraphText = [Inline] -- a paragraph is made of many inline elements
 
+data ListType
+  = OrderedList -- used for unordered lists
+  | UnorderedList -- used for ordered lists
+  deriving (Show, Eq)
+
 data Block
   = LI [Block] -- List Items
-  | UL Integer [Block] -- Unordered List
-  | OL Integer [Block] -- Ordered List
+  | List ListType Integer [Block] -- Lists (type, indentation, items)
   | Heading1 ParagraphText -- Heading 1
   | Heading2 ParagraphText -- Heading 2
   | Heading3 ParagraphText -- Heading 3
@@ -103,8 +107,7 @@ doc1 =
 doc2 :: Document
 doc2 =
   [ Heading1 [Normal "The Top 3 Programming Languages"],
-    OL
-      0
+    List OrderedList 0
       [ LI [Paragraph [Normal "Python"]],
         LI [Paragraph [Normal "JavaScript"]],
         LI [Paragraph [Normal "GoLang"]]
@@ -115,20 +118,17 @@ doc2 =
 doc3 :: Document
 doc3 =
   [ Heading1 [Normal "The families of programming languages"],
-    UL
-      0
+    List UnorderedList 0
       [ LI
           [ Paragraph [Normal "Machine Code"],
-            OL
-              1
+            List OrderedList 1
               [ LI [Paragraph [Normal "CISC"]],
                 LI [Paragraph [Normal "RISC"]]
               ]
           ],
         LI
           [ Paragraph [Normal "Assembly"],
-            OL
-              1
+            List OrderedList 1
               [ LI [Paragraph [Normal "ARM"]],
                 LI [Paragraph [Normal "X86"]],
                 LI [Paragraph [Normal "6502"]]
@@ -136,8 +136,7 @@ doc3 =
           ],
         LI
           [ Paragraph [Normal "High Level"],
-            OL
-              1
+            List OrderedList 1
               [ LI [Paragraph [Normal "C"]],
                 LI [Paragraph [Normal "Haskell"]],
                 LI [Paragraph [Normal "JavaScript"]]
@@ -292,16 +291,12 @@ sr input (PB (Paragraph p) : PB (Heading5 h) : rs) = sr input (PB (Heading5 (h +
 sr input (PB (Paragraph p) : H6Op : rs) = sr input (PB (Heading6 p) : rs) -- convert paragraph to heading 6
 sr input (PB (Paragraph p) : PB (Heading6 h) : rs) = sr input (PB (Heading6 (h ++ p)) : rs) -- merge paragraph into heading 6
 sr input (CodeOp : PB (Paragraph p) : CodeOp : rs) = sr input (PB (Code p) : rs) -- convert paragraph to code block
-sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (OL 0 [LI [Paragraph p]]) : rs) -- promote paragraph to ordered list
-sr input (PB (OL i o) : Tab : rs) = sr input (PB (OL (i + 1) o) : rs) -- increase indentation on ordered list
-sr input (PB (OL i2 o2) : PB (OL i1 o1) : rs)
-  | i2 == i1 = sr input (PB (OL i1 (o1 ++ o2)) : rs) -- merge ordered lists of same level
-  | i2 > i1 = sr input (PB ( OL i1 (o1++[OL i2 o2]) ) : rs) -- merge child ordered list
-sr input (PB (Paragraph p) : Dash : rs) = sr input (PB (UL 0 [LI [Paragraph p]]) : rs) -- promote paragraph to unordered list
-sr input (PB (UL i o) : Tab : rs) = sr input (PB (UL (i + 1) o) : rs) -- increase indentation on unordered list
-sr input (PB (UL i2 o2) : PB (UL i1 o1) : rs)
-  | i2 == i1 = sr input (PB (UL i1 (o1 ++ o2)) : rs) -- merge unordered lists of same level
-  | i2 > i1 = sr input (PB (UL i1 (o1 ++ [UL i2 o2])) : rs) -- merge child unordered list
+sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (List OrderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to ordered list
+sr input (PB (Paragraph p) : Dash : rs) = sr input (PB (List UnorderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to unordered list
+sr input (PB (List t i o) : Tab : rs) = sr input (PB (List t (i + 1) o) : rs) -- increase indentation on a list
+sr input (PB (List t2 i2 o2) : PB (List t1 i1 o1) : rs)
+  | i2 == i1 && t2 == t1 = sr input (PB (List t1 i1 (o1 ++ o2)) : rs) -- merge lists of same level and type
+  | i2 > i1 = sr input (PB ( List t1 i1 (o1++[List t2 i2 o2]) ) : rs) -- merge child ordered list
   --shift-reduce rules
 sr (i : input) stack = sr input (i : stack) -- shift stack
 sr input stack = error (show input ++ show stack) -- ran out of pattern matches
@@ -355,8 +350,8 @@ blockToHTML :: [Block] -> String
 blockToHTML [] = ""
 blockToHTML (x : xs) = case x of
   (LI t) -> " <li>" ++ blockToHTML t ++ "</li> " ++ blockToHTML xs
-  (UL _ t) -> " <ul>" ++ blockToHTML t ++ "</ul> " ++ blockToHTML xs
-  (OL _ t) -> " <ol>" ++ blockToHTML t ++ "</ol> " ++ blockToHTML xs
+  (List UnorderedList _ t) -> " <ul>" ++ blockToHTML t ++ "</ul> " ++ blockToHTML xs
+  (List OrderedList _ t) -> " <ol>" ++ blockToHTML t ++ "</ol> " ++ blockToHTML xs
   (Heading1 t) -> " <h1>" ++ inlineToHTML t ++ "</h1> " ++ blockToHTML xs
   (Heading2 t) -> " <h2>" ++ inlineToHTML t ++ "</h2> " ++ blockToHTML xs
   (Paragraph t) -> " <p>" ++ inlineToHTML t ++ "</p> " ++ blockToHTML xs
