@@ -6,6 +6,11 @@
   [1]: https://wiki.haskell.org/Tutorials/Programming_Haskell/Argument_handling
   [2]: https://stackoverflow.com/a/20482547Submit
   [3]: https://stackoverflow.com/a/7867786
+
+  Markdown References
+
+  https://github.github.com/gfm/
+  https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax
 -}
 
 {-
