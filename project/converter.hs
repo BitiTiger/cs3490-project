@@ -30,6 +30,7 @@ data Inline
   | Preformatted Text -- inline code
   | HyperLink [Inline] Text -- hyperlink (alias, url)
   | ImageLink [Inline] Text -- image (alt, url)
+  | CheckBox Bool -- checkbox
   deriving (Show, Eq)
 
 type ParagraphText = [Inline] -- a paragraph is made of many inline elements
@@ -82,6 +83,8 @@ data Token
   | LPar -- left parentheses
   | RPar -- right parentheses
   | ImgOp -- images
+  | CheckBoxTrueOp -- checked checkbox
+  | CheckBoxFalseOp -- unchecked checkbox
   deriving (Show, Eq)
 
 {-
@@ -219,6 +222,8 @@ preproc ('\n' : '\n' : xs) = ' ' : '\n' : '\n' : ' ' : preproc xs -- Endline
 preproc ('\n' : xs) = ' ' : '\n' : ' ' : preproc xs -- Newline
 preproc ('\t' : xs) = ' ' : '\t' : ' ' : preproc xs -- Tab
 preproc ('!' : '['  : xs) = ' ' : '!' : '[' : ' ' : preproc xs -- Images
+preproc ('[' : ']'  : xs) = ' ' : '[' : ']' : ' ' : preproc xs -- Unchecked Checkbox
+preproc ('[' : 'x' : ']' : xs) = ' ' : '[' : 'x' : ']' : ' ' : preproc xs -- Checked Checkbox
 preproc ('['  : xs) = ' ' : '[' : ' ' : preproc xs -- Left Bracket
 preproc (']'  : xs) = ' ' : ']' : ' ' : preproc xs -- Right Bracket
 preproc ('('  : xs) = ' ' : '(' : ' ' : preproc xs -- Left Parentheses
@@ -248,6 +253,8 @@ classify "\n\n" = EndBlock
 classify "\n" = NewLine
 classify "\t" = Tab
 classify "![" = ImgOp
+classify "[x]" = CheckBoxTrueOp
+classify "[]" = CheckBoxFalseOp
 classify "[" = LBra
 classify "]" = RBra
 classify "(" = LPar
@@ -345,6 +352,9 @@ sr input (PreformattedOp : PI (Normal t) : PreformattedOp : rs) = sr input (PI (
 sr input (RPar : PB (Paragraph (Normal t2:_)) : LPar : RBra : PB (Paragraph t1) : LBra : rs) = sr input (PI (HyperLink t1 t2) : rs) -- promote text to hyperlink text
 sr input (RPar : PB (Paragraph (Normal t2:_)) : LPar : RBra : PB (Paragraph t1) : ImgOp : rs) = sr input (PI (ImageLink t1 t2) : rs) -- promote text to image
 sr input (RPar : PB (Paragraph p) : LPar : rs) = sr input (PB (Paragraph ([Normal "("]++p++[Normal ")"])):rs) -- convert LPar and RPar to normal text
+sr input (CheckBoxFalseOp : rs) = sr input (PI (CheckBox False):rs) -- promote to unchecked checkbox
+sr input (RBra: LBra : rs) = sr input (PI (CheckBox False):rs) -- promote to unchecked checkbox
+sr input (CheckBoxTrueOp : rs) = sr input (PI (CheckBox True):rs) -- promote to checked checkbox
 --block rules
 sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PB (Paragraph [i]) : x : rs) -- check if it is SAFE to promote the inline element
 sr input [PI i] = sr input [PB (Paragraph [i])] -- if the only thing left is a single text, promote it to a paragraph
@@ -406,6 +416,8 @@ inlineToHTML (x : xs) = case x of
   (Preformatted t) -> " <span style='font-family:monospace'>" ++ t ++ "</span> " ++ inlineToHTML xs
   (HyperLink alias url) -> " <a href='" ++ url ++ "'>" ++ inlineToHTML alias ++ "</a> " ++ inlineToHTML xs
   (ImageLink alt url) -> " <img src='" ++ url ++ "' alt='" ++ inlineToHTML alt ++ "'>" ++ inlineToHTML xs
+  (CheckBox False) -> "<input type='checkbox' disabled='disabled'>" ++ inlineToHTML xs
+  (CheckBox True) -> "<input type='checkbox' disabled='disabled' checked='checked'>" ++ inlineToHTML xs
 
 -- convert inline elements back to their original form
 codeParagraphToHTML :: [Inline] -> String
