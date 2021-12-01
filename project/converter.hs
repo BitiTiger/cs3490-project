@@ -434,12 +434,16 @@ inlineToHTML (x : xs) = case x of
 codeParagraphToHTML :: [Inline] -> String
 codeParagraphToHTML [] = ""
 codeParagraphToHTML (x : xs) = case x of
-  (Normal t) -> t ++ codeParagraphToHTML xs
-  (Bold t) -> "**" ++ t ++ "**" ++ codeParagraphToHTML xs
-  (Italic t) -> "*" ++ t ++ "*" ++ codeParagraphToHTML xs
-  (BoldItalic t) -> "***" ++ t ++ "***" ++ codeParagraphToHTML xs
-  (Strikethrough t) -> "~~" ++ t ++ "~~" ++ codeParagraphToHTML xs
-  (Preformatted t) -> "`" ++ t ++ "`" ++ codeParagraphToHTML xs
+  (Normal t) -> t ++ " " ++ codeParagraphToHTML xs
+  (Bold t) -> "**" ++ t ++ "** " ++ codeParagraphToHTML xs
+  (Italic t) -> "*" ++ t ++ "* " ++ codeParagraphToHTML xs
+  (BoldItalic t) -> "***" ++ t ++ "*** " ++ codeParagraphToHTML xs
+  (Strikethrough t) -> "~~" ++ t ++ "~~ " ++ codeParagraphToHTML xs
+  (Preformatted t) -> "`" ++ t ++ "` " ++ codeParagraphToHTML xs
+  (HyperLink alias url) -> "[" ++ codeParagraphToHTML alias ++ "](" ++ url ++ ") " ++ codeParagraphToHTML xs
+  (ImageLink alt url) -> "![" ++ url ++ "]" ++ "(" ++ codeParagraphToHTML alt ++ ") " ++ codeParagraphToHTML xs
+  (CheckBox False) -> "[ ] " ++ codeParagraphToHTML xs
+  (CheckBox True) -> "[x] " ++ codeParagraphToHTML xs
 
 -- convert blocks to an HTML string
 blockToHTML :: [Block] -> String
