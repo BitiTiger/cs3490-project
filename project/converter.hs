@@ -54,6 +54,7 @@ data Block
   | Heading4 ParagraphText -- Heading 4
   | Heading5 ParagraphText -- Heading 5
   | Heading6 ParagraphText -- Heading 6
+  | Quote ParagraphText -- Quote
   | Paragraph ParagraphText -- a paragraph is made of text
   | Code ParagraphText -- Code block
   deriving (Show, Eq)
@@ -90,6 +91,7 @@ data Token
   | ImgOp -- images
   | CheckBoxTrueOp -- checked checkbox
   | CheckBoxFalseOp -- unchecked checkbox
+  | QuoteOp -- quotations
   deriving (Show, Eq)
 
 {-
@@ -233,6 +235,7 @@ preproc ('['  : xs) = ' ' : '[' : ' ' : preproc xs -- Left Bracket
 preproc (']'  : xs) = ' ' : ']' : ' ' : preproc xs -- Right Bracket
 preproc ('('  : xs) = ' ' : '(' : ' ' : preproc xs -- Left Parentheses
 preproc (')'  : xs) = ' ' : ')' : ' ' : preproc xs -- Right Parentheses
+preproc ('>'  : xs) = ' ' : '>' : ' ' : preproc xs -- Quotation
 preproc (x : xs) = x : preproc xs -- GenericText
 
 -- this converts a single string to the correct token
@@ -264,6 +267,7 @@ classify "[" = LBra
 classify "]" = RBra
 classify "(" = LPar
 classify ")" = RPar
+classify ">" = QuoteOp
 classify x
   | isValidOrderedList x = OLOp
   | otherwise = GenericText x
@@ -377,6 +381,8 @@ sr input (PB (Paragraph p) : H5Op : rs) = sr input (PB (Heading5 p) : rs) -- con
 sr input (PB (Paragraph p) : PB (Heading5 h) : rs) = sr input (PB (Heading5 (h ++ p)) : rs) -- merge paragraph into heading 5
 sr input (PB (Paragraph p) : H6Op : rs) = sr input (PB (Heading6 p) : rs) -- convert paragraph to heading 6
 sr input (PB (Paragraph p) : PB (Heading6 h) : rs) = sr input (PB (Heading6 (h ++ p)) : rs) -- merge paragraph into heading 6
+sr input (PB (Paragraph p) : QuoteOp : rs) = sr input (PB (Quote p) : rs) -- convert paragraph to quote
+sr input (PB (Paragraph p) : PB (Quote h) : rs) = sr input (PB (Quote (h ++ p)) : rs) -- merge paragraph into quote
 sr input (CodeOp : PB (Paragraph p) : CodeOp : rs) = sr input (PB (Code p) : rs) -- convert paragraph to code block
 sr input (PB (Paragraph p) : OLOp : rs) = sr input (PB (List OrderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to ordered list
 sr input (PB (Paragraph p) : Dash : rs) = sr input (PB (List UnorderedList 0 [LI [Paragraph p]]) : rs) -- promote paragraph to unordered list
@@ -446,6 +452,7 @@ blockToHTML (x : xs) = case x of
   (Heading2 t) -> " <h2>" ++ inlineToHTML t ++ "</h2> " ++ blockToHTML xs
   (Paragraph t) -> " <p>" ++ inlineToHTML t ++ "</p> " ++ blockToHTML xs
   (Code t) -> " <p style='font-family:monospace'>" ++ codeParagraphToHTML t ++ "</h1> " ++ blockToHTML xs
+  (Quote t) -> " <blockquote>" ++ inlineToHTML t ++  "</blockquote> " ++ blockToHTML xs
 
 -- this generates the entire HTML webpage
 generateHTML :: [Block] -> String
