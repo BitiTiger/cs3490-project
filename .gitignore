@@ -10,3 +10,5 @@ project/converter
 build
 # vs code stuff
 .vscode
+# HTML files
+*.html
