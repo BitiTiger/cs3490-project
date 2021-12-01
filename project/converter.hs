@@ -14,7 +14,7 @@
 
 import System.Environment (getArgs) -- [from source 1]
 -- [from source 1]
-import System.IO (IOMode (ReadMode, WriteMode), hGetContents, openFile, hClose, hPutStrLn) -- [from source 3]
+import System.IO (IOMode (ReadMode, WriteMode), hClose, hGetContents, hPutStrLn, openFile) -- [from source 3]
 
 {-
 	Data Type Definitions
@@ -28,6 +28,7 @@ data Inline
   | BoldItalic Text -- bold and italic text
   | Strikethrough Text -- strikethrough text
   | Preformatted Text -- inline code
+  | HyperLink [Inline] Text -- hyperlink (alias, url)
   deriving (Show, Eq)
 
 type ParagraphText = [Inline] -- a paragraph is made of many inline elements
@@ -75,6 +76,10 @@ data Token
   | PT [Inline] -- preparsed ParagraphText
   | GenericText Text -- generic Text type
   | Err String -- error token
+  | LBra -- left brace
+  | RBra -- right brace
+  | LPar -- left parentheses
+  | RPar -- right parentheses
   deriving (Show, Eq)
 
 {-
@@ -211,6 +216,10 @@ preproc ('~' : '~' : xs) = ' ' : '~' : '~' : ' ' : preproc xs -- Strikethrough C
 preproc ('\n' : '\n' : xs) = ' ' : '\n' : '\n' : ' ' : preproc xs -- Endline
 preproc ('\n' : xs) = ' ' : '\n' : ' ' : preproc xs -- Newline
 preproc ('\t' : xs) = ' ' : '\t' : ' ' : preproc xs -- Tab
+preproc ('['  : xs) = ' ' : '[' : ' ' : preproc xs -- Left Bracket
+preproc (']'  : xs) = ' ' : ']' : ' ' : preproc xs -- Right Bracket
+preproc ('('  : xs) = ' ' : '(' : ' ' : preproc xs -- Left Parentheses
+preproc (')'  : xs) = ' ' : ')' : ' ' : preproc xs -- Right Parentheses
 preproc (x : xs) = x : preproc xs -- GenericText
 
 -- this converts a single string to the correct token
@@ -235,6 +244,10 @@ classify "~~" = StrikethroughOp
 classify "\n\n" = EndBlock
 classify "\n" = NewLine
 classify "\t" = Tab
+classify "[" = LBra
+classify "]" = RBra
+classify "(" = LPar
+classify ")" = RPar
 classify x
   | isValidOrderedList x = OLOp
   | otherwise = GenericText x
@@ -324,6 +337,8 @@ sr input (ItalicOp : PI (Normal t) : ItalicOp : rs) = sr input (PI (Italic t) : 
 sr input (BoldItalicOp : PI (Normal t) : BoldItalicOp : rs) = sr input (PI (BoldItalic t) : rs) -- promote text to bold italic text
 sr input (StrikethroughOp : PI (Normal t) : StrikethroughOp : rs) = sr input (PI (Strikethrough t) : rs) -- promote text to strikethrough text
 sr input (PreformattedOp : PI (Normal t) : PreformattedOp : rs) = sr input (PI (Preformatted t) : rs) -- promote text to preformatted text
+-- [*** Exception: [][RPar,PB (Paragraph [Normal "https://www.google.com"]),LPar,RBra,PB (Paragraph [Normal "click",Normal "me"]),LBra]
+sr input (RPar : PB (Paragraph (Normal t2:_)) : LPar : RBra : PB (Paragraph t1) : LBra : rs) = sr input (PI (HyperLink t1 t2) : rs) -- promote text to hyperlink text
 --block rules
 sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PB (Paragraph [i]) : x : rs) -- check if it is SAFE to promote the inline element
 sr input [PI i] = sr input [PB (Paragraph [i])] -- if the only thing left is a single text, promote it to a paragraph
@@ -383,6 +398,7 @@ inlineToHTML (x : xs) = case x of
   (BoldItalic t) -> " <strong><em>" ++ t ++ "</em></strong> " ++ inlineToHTML xs
   (Strikethrough t) -> " <del>" ++ t ++ "</del> " ++ inlineToHTML xs
   (Preformatted t) -> " <span style='font-family:monospace'>" ++ t ++ "</span> " ++ inlineToHTML xs
+  (HyperLink alias url) -> " <a href='" ++ url ++ "'>" ++ inlineToHTML alias ++ "</a> " ++ inlineToHTML xs
 
 -- convert inline elements back to their original form
 codeParagraphToHTML :: [Inline] -> String

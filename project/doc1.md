@@ -8,4 +8,4 @@
 
 ## This tests `preformatted` text
 
-This is ~~not~~ a normal paragraph. I can make things **bold** or *italic* or ***both***. I can even have `preformatted` text. Isn't markdown cool?!
+This is ~~not~~ a [normal](https://www.google.com/search?q=normal) paragraph. I can make things **bold** or *italic* or ***both***. I can even have `preformatted` text. Isn't markdown cool?!
