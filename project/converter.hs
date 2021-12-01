@@ -339,6 +339,7 @@ sr input (StrikethroughOp : PI (Normal t) : StrikethroughOp : rs) = sr input (PI
 sr input (PreformattedOp : PI (Normal t) : PreformattedOp : rs) = sr input (PI (Preformatted t) : rs) -- promote text to preformatted text
 -- [*** Exception: [][RPar,PB (Paragraph [Normal "https://www.google.com"]),LPar,RBra,PB (Paragraph [Normal "click",Normal "me"]),LBra]
 sr input (RPar : PB (Paragraph (Normal t2:_)) : LPar : RBra : PB (Paragraph t1) : LBra : rs) = sr input (PI (HyperLink t1 t2) : rs) -- promote text to hyperlink text
+sr input (RPar : PB (Paragraph p) : LPar : rs) = sr input (PB (Paragraph ([Normal "("]++p++[Normal ")"])):rs) -- convert LPar and RPar to normal text
 --block rules
 sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PB (Paragraph [i]) : x : rs) -- check if it is SAFE to promote the inline element
 sr input [PI i] = sr input [PB (Paragraph [i])] -- if the only thing left is a single text, promote it to a paragraph
