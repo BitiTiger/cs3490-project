@@ -272,17 +272,17 @@ isUnparsedText (GenericText t) = True
 isUnparsedText _ = False
 
 -- this checks if there might be another list in an array
-containsList :: [Block] -> Bool
-containsList [] = False
-containsList (x : xs) = case x of
+containsListItem :: [Block] -> Bool
+containsListItem [] = False
+containsListItem (x : xs) = case x of
   (LI {}) -> True -- NOTE: Lists are INSIDE of list items, so I used LI instead of List
-  _ -> containsList xs
+  _ -> containsListItem xs
 
 -- this tries to add a new child list to an existing list (iteratively)
 mapLists :: [Block] -> Block -> [Block]
 mapLists [] (List t2 i2 o2) = [List t2 i2 o2]
 mapLists ((List t1 i1 o1) : xs) (List t2 i2 o2) =
-  if containsList xs
+  if containsListItem xs
     then List t1 i1 o1 : mapLists xs (List t2 i2 o2)
     else mergeLists (List t1 i1 o1) (List t2 i2 o2) : xs
 mapLists (x : xs) (List t2 i2 o2) = x : mapLists xs (List t2 i2 o2)
@@ -294,13 +294,20 @@ mergeLists (List t1 i1 o1) (List t2 i2 o2)
   | otherwise = List t1 i1 (mapLists o1 (List t2 i2 o2)) -- try to insert recursively
 mergeLists _ _ = error "both arguments must be lists"
 
+containsList :: [Block] -> Bool
+containsList [] = False
+containsList (x : xs) = case x of
+  (List {}) -> True -- NOTE: Lists are INSIDE of list items, so I used LI instead of List
+  _ -> containsList xs
+
 -- this appends a paragraph to a list entry
 addParagraphToList :: Block -> [Block] -> [Block]
 addParagraphToList (Paragraph p) [] = [LI [Paragraph p]]
 addParagraphToList (Paragraph p) (o : os) =
-  if containsList os
+  if containsList os || containsListItem os
     then o : addParagraphToList (Paragraph p) os
     else case o of
+      List t i o2 -> List t i (addParagraphToList (Paragraph p) o2) : os
       LI [Paragraph p2] -> LI [Paragraph (p2 ++ p)] : os
       LI [_] -> LI [o, Paragraph p] : os
 
@@ -431,6 +438,8 @@ main = do
   print parsed
   -- run the converter
   let html = generateHTML parsed
+  putStrLn "=== HTML CODE ==="
+  print html
   -- write the html file
   outHandle <- openFile outfile WriteMode -- [inferred from source 3]
   hPutStrLn outHandle html -- [inferred from source 3]

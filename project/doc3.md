@@ -1,13 +1,13 @@
 # The families of programming languages
 
 - Machine Code
-    1. CISC
-    2. RISC
-- Assembly
-    1. ARM
-    2. X86
-    3. 6502
+    1. CISC (large ISA)
+    2. RISC (small ISA)
+- Assembly Instructions
+    1. ARM (used on mobile)
+    2. X86 (used on desktop/laptop/servers)
+    3. 6502 (used in old consoles)
 - High Level
-    1. C
-    2. Haskell
-    3. JavaScript
+    1. C (the best)
+    2. Haskell (the most confusing)
+    3. JavaScript (the worst)
