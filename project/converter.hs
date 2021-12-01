@@ -29,6 +29,7 @@ data Inline
   | Strikethrough Text -- strikethrough text
   | Preformatted Text -- inline code
   | HyperLink [Inline] Text -- hyperlink (alias, url)
+  | ImageLink [Inline] Text -- image (alt, url)
   deriving (Show, Eq)
 
 type ParagraphText = [Inline] -- a paragraph is made of many inline elements
@@ -80,6 +81,7 @@ data Token
   | RBra -- right brace
   | LPar -- left parentheses
   | RPar -- right parentheses
+  | ImgOp -- images
   deriving (Show, Eq)
 
 {-
@@ -216,6 +218,7 @@ preproc ('~' : '~' : xs) = ' ' : '~' : '~' : ' ' : preproc xs -- Strikethrough C
 preproc ('\n' : '\n' : xs) = ' ' : '\n' : '\n' : ' ' : preproc xs -- Endline
 preproc ('\n' : xs) = ' ' : '\n' : ' ' : preproc xs -- Newline
 preproc ('\t' : xs) = ' ' : '\t' : ' ' : preproc xs -- Tab
+preproc ('!' : '['  : xs) = ' ' : '!' : '[' : ' ' : preproc xs -- Images
 preproc ('['  : xs) = ' ' : '[' : ' ' : preproc xs -- Left Bracket
 preproc (']'  : xs) = ' ' : ']' : ' ' : preproc xs -- Right Bracket
 preproc ('('  : xs) = ' ' : '(' : ' ' : preproc xs -- Left Parentheses
@@ -244,6 +247,7 @@ classify "~~" = StrikethroughOp
 classify "\n\n" = EndBlock
 classify "\n" = NewLine
 classify "\t" = Tab
+classify "![" = ImgOp
 classify "[" = LBra
 classify "]" = RBra
 classify "(" = LPar
@@ -339,6 +343,7 @@ sr input (StrikethroughOp : PI (Normal t) : StrikethroughOp : rs) = sr input (PI
 sr input (PreformattedOp : PI (Normal t) : PreformattedOp : rs) = sr input (PI (Preformatted t) : rs) -- promote text to preformatted text
 -- [*** Exception: [][RPar,PB (Paragraph [Normal "https://www.google.com"]),LPar,RBra,PB (Paragraph [Normal "click",Normal "me"]),LBra]
 sr input (RPar : PB (Paragraph (Normal t2:_)) : LPar : RBra : PB (Paragraph t1) : LBra : rs) = sr input (PI (HyperLink t1 t2) : rs) -- promote text to hyperlink text
+sr input (RPar : PB (Paragraph (Normal t2:_)) : LPar : RBra : PB (Paragraph t1) : ImgOp : rs) = sr input (PI (ImageLink t1 t2) : rs) -- promote text to image
 sr input (RPar : PB (Paragraph p) : LPar : rs) = sr input (PB (Paragraph ([Normal "("]++p++[Normal ")"])):rs) -- convert LPar and RPar to normal text
 --block rules
 sr input (PI i : x : rs) | not (isUnparsedText x) = sr input (PB (Paragraph [i]) : x : rs) -- check if it is SAFE to promote the inline element
@@ -400,6 +405,7 @@ inlineToHTML (x : xs) = case x of
   (Strikethrough t) -> " <del>" ++ t ++ "</del> " ++ inlineToHTML xs
   (Preformatted t) -> " <span style='font-family:monospace'>" ++ t ++ "</span> " ++ inlineToHTML xs
   (HyperLink alias url) -> " <a href='" ++ url ++ "'>" ++ inlineToHTML alias ++ "</a> " ++ inlineToHTML xs
+  (ImageLink alt url) -> " <img src='" ++ url ++ "' alt='" ++ inlineToHTML alt ++ "'>" ++ inlineToHTML xs
 
 -- convert inline elements back to their original form
 codeParagraphToHTML :: [Inline] -> String
