@@ -36,6 +36,7 @@ data Inline
   | HyperLink [Inline] Text -- hyperlink (alias, url)
   | ImageLink [Inline] Text -- image (alt, url)
   | CheckBox Bool -- checkbox
+  | Comment [Inline] -- comment
   deriving (Show, Eq)
 
 type ParagraphText = [Inline] -- a paragraph is made of many inline elements
@@ -92,6 +93,8 @@ data Token
   | CheckBoxTrueOp -- checked checkbox
   | CheckBoxFalseOp -- unchecked checkbox
   | QuoteOp -- quotations
+  | LComment -- left comment
+  | RComment -- right comment
   deriving (Show, Eq)
 
 {-
@@ -209,6 +212,8 @@ convertSpacesToTabs (x : xs) = x : convertSpacesToTabs xs
 -- helper to add spaces between symbols
 preproc :: String -> String
 preproc "" = "" -- Base Case
+preproc ('<' : '!' : '-' : '-' : xs) = ' ' : '<' : '!' : '-' : '-' : ' ' : preproc xs -- Left Quotation
+preproc ('-' : '-' : '>' : xs) = ' ' : '-' : '-' : '>' : ' ' : preproc xs -- Right Quotation
 preproc ('#' : '#' : '#' : '#' : '#' : '#' : xs) = ' ' : '#' : '#' : '#' : '#' : '#' : '#' : ' ' : preproc xs -- Header6 Case
 preproc ('#' : '#' : '#' : '#' : '#' : xs) = ' ' : '#' : '#' : '#' : '#' : '#' : ' ' : preproc xs -- Header5 Case
 preproc ('#' : '#' : '#' : '#' : xs) = ' ' : '#' : '#' : '#' : '#' : ' ' : preproc xs -- Header4 Case
@@ -268,6 +273,8 @@ classify "]" = RBra
 classify "(" = LPar
 classify ")" = RPar
 classify ">" = QuoteOp
+classify "<!--" = LComment
+classify "-->" = RComment
 classify x
   | isValidOrderedList x = OLOp
   | otherwise = GenericText x
@@ -357,7 +364,7 @@ sr input (ItalicOp : PI (Normal t) : ItalicOp : rs) = sr input (PI (Italic t) : 
 sr input (BoldItalicOp : PI (Normal t) : BoldItalicOp : rs) = sr input (PI (BoldItalic t) : rs) -- promote text to bold italic text
 sr input (StrikethroughOp : PI (Normal t) : StrikethroughOp : rs) = sr input (PI (Strikethrough t) : rs) -- promote text to strikethrough text
 sr input (PreformattedOp : PI (Normal t) : PreformattedOp : rs) = sr input (PI (Preformatted t) : rs) -- promote text to preformatted text
--- [*** Exception: [][RPar,PB (Paragraph [Normal "https://www.google.com"]),LPar,RBra,PB (Paragraph [Normal "click",Normal "me"]),LBra]
+sr input (RComment: PB (Paragraph p) : LComment : rs) = sr input (PI (Comment p) : rs) -- promote to comment
 sr input (RPar : PB (Paragraph (Normal t2:_)) : LPar : RBra : PB (Paragraph t1) : LBra : rs) = sr input (PI (HyperLink t1 t2) : rs) -- promote text to hyperlink text
 sr input (RPar : PB (Paragraph (Normal t2:_)) : LPar : RBra : PB (Paragraph t1) : ImgOp : rs) = sr input (PI (ImageLink t1 t2) : rs) -- promote text to image
 sr input (RPar : PB (Paragraph p) : LPar : rs) = sr input (PB (Paragraph ([Normal "("]++p++[Normal ")"])):rs) -- convert LPar and RPar to normal text
@@ -429,6 +436,7 @@ inlineToHTML (x : xs) = case x of
   (ImageLink alt url) -> " <img src='" ++ url ++ "' alt='" ++ inlineToHTML alt ++ "'>" ++ inlineToHTML xs
   (CheckBox False) -> "<input type='checkbox' disabled='disabled'>" ++ inlineToHTML xs
   (CheckBox True) -> "<input type='checkbox' disabled='disabled' checked='checked'>" ++ inlineToHTML xs
+  (Comment t) -> inlineToHTML xs
 
 -- convert inline elements back to their original form
 codeParagraphToHTML :: [Inline] -> String
@@ -444,6 +452,7 @@ codeParagraphToHTML (x : xs) = case x of
   (ImageLink alt url) -> "![" ++ url ++ "]" ++ "(" ++ codeParagraphToHTML alt ++ ") " ++ codeParagraphToHTML xs
   (CheckBox False) -> "[ ] " ++ codeParagraphToHTML xs
   (CheckBox True) -> "[x] " ++ codeParagraphToHTML xs
+  (Comment t) -> "<!-- " ++ codeParagraphToHTML t ++ " -->" ++ codeParagraphToHTML xs
 
 -- convert blocks to an HTML string
 blockToHTML :: [Block] -> String
