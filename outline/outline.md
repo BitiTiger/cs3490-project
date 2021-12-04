@@ -95,7 +95,7 @@ generateHTML :: [Block] -> String
 -- generate the top and bottom of the html file and call structureToHTML between the body tags
 ```
 
-This generates the HTML header and body code. It inserts the output from `generateHTML` inside the body tags to form a properly formatted HTML page.
+This generates the HTML header and body code. It inserts the output from `structureToHTML` inside the body tags to form a properly formatted HTML page.
 
 # Auxiliary Functions
 
