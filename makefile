@@ -2,6 +2,7 @@
 all:
 	make proposal
 	make outline
+	make report
 	make project
 
 # this converts the proposal markdown document into a pdf
@@ -13,6 +14,11 @@ proposal: proposal/proposal.md
 # it uses a tool called pandoc to do the conversions but I doubt you have it installed
 outline: outline/outline.md
 	pandoc -f markdown --pdf-engine=lualatex ./outline/outline.md -o ./outline/outline-preview.pdf
+
+# this converts the proposal markdown document into a pdf
+# it uses a tool called pandoc to do the conversions but I doubt you have it installed
+report: report/final-report.md
+	pandoc -f markdown --pdf-engine=lualatex ./report/final-report.md -o ./report/final-report-preview.pdf
 
 # this compiles Haskell code into a binary and puts it in the build directory
 project: project/converter.hs
@@ -28,6 +34,8 @@ clean:
 	rm -f proposal/proposal-preview.pdf
 	# the outline pdf
 	rm -f outline/outline-preview.pdf
+	# the final report pdf
+	rm -f report/final-report-preview.pdf
 	# left over compilation files
 	rm -f project/converter.hi project/converter.o
 	# the project binary
