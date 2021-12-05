@@ -19,5 +19,5 @@ This is ~~not~~ a [normal](https://www.google.com/search?q=normal) paragraph. I 
 ![Pikachu](https://static.zerochan.net/Pikachu.600.1452733.jpg)
 
 <!-- 
-this will not be seen 
+this will not be seen
 -->
