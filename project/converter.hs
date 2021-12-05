@@ -4,7 +4,7 @@
   Sources (note: lines from these sources are marked with "from source #")
 
   [1]: https://wiki.haskell.org/Tutorials/Programming_Haskell/Argument_handling
-  [2]: https://stackoverflow.com/a/20482547Submit
+  [2]: https://stackoverflow.com/a/20482547
   [3]: https://stackoverflow.com/a/7867786
 
   Markdown References
