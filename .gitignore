@@ -13,3 +13,5 @@ build
 .vscode
 # HTML files
 *.html
+# the submission directory
+submission
