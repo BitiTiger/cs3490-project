@@ -18,7 +18,6 @@
 -}
 
 import System.Environment (getArgs) -- [from source 1]
--- [from source 1]
 import System.IO (IOMode (ReadMode, WriteMode), hClose, hGetContents, hPutStrLn, openFile) -- [from source 3]
 
 {-
