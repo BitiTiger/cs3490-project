@@ -41,10 +41,12 @@ submission:
 	cp ./project/doc1.md ./submission/doc1.md
 	cp ./project/doc2.md ./submission/doc2.md
 	cp ./project/doc3.md ./submission/doc3.md
+	cp ./project/doc4.md ./submission/doc4.md
 	# add files to zip
 	zip -j ./submission/submission.zip ./submission/doc1.md
 	zip -j ./submission/submission.zip ./submission/doc2.md
 	zip -j ./submission/submission.zip ./submission/doc3.md
+	zip -j ./submission/submission.zip ./submission/doc4.md
 	zip -j ./submission/submission.zip ./submission/converter.hs
 	zip -j ./submission/submission.zip ./submission/report.pdf
 	# copy zip to build directory
